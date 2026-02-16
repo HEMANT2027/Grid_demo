@@ -19,11 +19,11 @@ export default function ControlPanel({
     const { energized } = simState;
 
     return (
-        <div className="control-panel">
+        <div className="control-panel glass">
             {/* Map Style */}
             <div className="panel-section">
                 <div className="section-title">
-                    <MapIcon size={12} style={{ marginRight: 6 }} /> Map Style
+                    <MapIcon size={12} style={{ marginRight: 8 }} /> Map Style
                 </div>
                 <div className="tile-selector">
                     <button
@@ -50,20 +50,17 @@ export default function ControlPanel({
             {/* Data Layers */}
             <div className="panel-section">
                 <div className="section-title">
-                    <Layers size={12} style={{ marginRight: 6 }} /> Layers
+                    <Layers size={12} style={{ marginRight: 8 }} /> Signal Layers
                 </div>
                 {[
-                    { key: 'lines', label: 'Transmission Lines' },
-                    { key: 'cables', label: 'Cables' },
+                    { key: 'lines', label: 'Transmission Grid' },
+                    { key: 'cables', label: 'Underground Cables' },
                     { key: 'towers', label: 'Towers' },
                     { key: 'substations', label: 'Substations' },
                 ].map(({ key, label }) => (
-                    <div key={key} className={`toggle-row ${layers[key] ? 'active' : ''}`}>
+                    <div key={key} className="toggle-row" onClick={() => onToggleLayer(key)}>
                         <span className="toggle-label">{label}</span>
-                        <div
-                            className={`toggle-switch ${layers[key] ? 'on' : ''}`}
-                            onClick={() => onToggleLayer(key)}
-                        />
+                        <div className={`toggle-switch ${layers[key] ? 'on' : ''}`} />
                     </div>
                 ))}
             </div>
@@ -71,36 +68,30 @@ export default function ControlPanel({
             {/* Grid Visual Control */}
             <div className="panel-section">
                 <div className="section-title">
-                    <Settings size={12} style={{ marginRight: 6 }} /> Grid Control
+                    <Settings size={12} style={{ marginRight: 8 }} /> System Control
                 </div>
-                <div className={`toggle-row ${energized ? 'active' : ''}`}>
-                    <span className="toggle-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {energized ? <Zap size={14} color="#FFD600" /> : <ZapOff size={14} color="#555" />}
-                        {energized ? 'Energized' : 'De-energized'}
+                <div className="toggle-row" onClick={energized ? onDeenergize : onEnergize}>
+                    <span className="toggle-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {energized ?
+                            <Zap size={14} color="var(--sensor-live)" fill="var(--sensor-live)" /> :
+                            <ZapOff size={14} color="var(--text-muted)" />
+                        }
+                        {energized ? 'System Energized' : 'System Offline'}
                     </span>
-                    <div
-                        className={`toggle-switch ${energized ? 'on' : ''}`}
-                        onClick={energized ? onDeenergize : onEnergize}
-                    />
+                    <div className={`toggle-switch ${energized ? 'on' : ''}`} />
                 </div>
             </div>
 
             {/* Simulation Lab Link */}
-            <div className="panel-section" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 12 }}>
+            <div className="panel-section" style={{ marginTop: 'auto', borderTop: '1px solid var(--border)' }}>
                 <button
                     className="btn primary"
                     onClick={onNavigateToSim}
-                    style={{
-                        background: 'linear-gradient(135deg, #00BCD4, #0097A7)',
-                        border: 'none',
-                        color: '#fff',
-                        fontWeight: 600,
-                    }}
                 >
                     <Activity size={14} /> Open Simulation Lab
                 </button>
-                <div style={{ fontSize: 10, color: '#666', textAlign: 'center', marginTop: 4 }}>
-                    Sensor placement, fault injection & detection
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
+                    Advanced analysis module<br />Version 2.4.0-alpha
                 </div>
             </div>
         </div>
