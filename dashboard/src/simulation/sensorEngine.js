@@ -6,32 +6,30 @@
  */
 
 /**
- * Traverse the full graph (all components) to creating a linear ordering of buses.
- * This ensures we consider every bus for sensor placement, not just those reachable from a source.
- * 
- * @param {Map} adj - Adjacency list
- * @param {number[]} allBuses - List of all bus IDs
- * @returns {number[]} Ordered list of all buses
+ * DFS preorder traversal from source.
+ * @param {Map} adj - adjacency list
+ * @param {Array} sources - list of source nodes
+ * @param {Array} allBuses - list of all buses (fallback)
+ * @returns {Array} ordering of nodes
  */
-function traverseFullGraph(adj, allBuses) {
+function dfsPreorder(adj, sources, allBuses) {
     const visited = new Set();
-    const ordering = [];
+    const order = [];
 
-    // Sort allBuses just to be deterministic
-    // (Optional, but good for consistent results across runs)
-    // Actually, assuming allBuses is stable is fine.
+    // Helper to traverse from a specific node
+    function traverse(startNode) {
+        if (visited.has(startNode)) return;
 
-    // Helper: Iterative DFS
-    function dfs(startNode) {
         const stack = [startNode];
         while (stack.length > 0) {
             const node = stack.pop();
+
             if (visited.has(node)) continue;
             visited.add(node);
-            ordering.push(node);
+            order.push(node);
 
             const neighbors = (adj.get(node) || []).map(n => n.to);
-            // Reverse to process in natural order
+            // Reverse so we process in consistent order (right-to-left push = left-to-right pop)
             for (let i = neighbors.length - 1; i >= 0; i--) {
                 if (!visited.has(neighbors[i])) {
                     stack.push(neighbors[i]);
@@ -40,53 +38,49 @@ function traverseFullGraph(adj, allBuses) {
         }
     }
 
-    // Visit every bus
-    for (const bus of allBuses) {
-        if (!visited.has(bus)) {
-            dfs(bus);
+    // 1. Traverse from all identified sources
+    const sourceArray = Array.isArray(sources) ? sources : [sources];
+    for (const source of sourceArray) {
+        traverse(source);
+    }
+
+    // 2. Fallback: Traverse any remaining unvisited nodes (should be covered by sources if computed correctly)
+    if (allBuses) {
+        for (const bus of allBuses) {
+            if (!visited.has(bus)) {
+                traverse(bus);
+            }
         }
     }
 
-    return ordering;
+    return order;
 }
 
 /**
- * Place sensors ensuring FULL coverage and EXACT count if possible.
- * 
+ * Place √n sensors using DFS ordering.
  * @param {Map} adj - adjacency list
- * @param {number[]} allBuses - Array of all bus IDs (required for full graph coverage)
- * @param {number} targetCount - Exact number of sensors to place
+ * @param {number|number[]} sources - ext_grid bus or list of sources
+ * @param {Array} allBuses - all bus IDs in the region
  * @returns {{ sensors: number[], blocks: number[][] }}
  */
-export function placeSensorsSqrtN(adj, allBuses, targetCount) {
-    if (!adj || !allBuses || allBuses.length === 0) return { sensors: [], blocks: [] };
-
-    const ordering = traverseFullGraph(adj, allBuses);
+export function placeSensorsSqrtN(adj, sources, allBuses) {
+    // Get ordering from source(s) using DFS
+    const ordering = dfsPreorder(adj, sources, allBuses);
     const n = ordering.length;
 
-    let T = targetCount;
-
-    // Sanity checks
-    if (!T || T < 1) T = 1;
-    if (T > n) T = n; // Cannot place more sensors than we have buses
-
-    const blocks = [];
-    // Partition n buses into T blocks exactly
-    // We use a precise partitioning: indices [floor(i*n/T), floor((i+1)*n/T))
-    for (let i = 0; i < T; i++) {
-        const start = Math.floor((i * n) / T);
-        const end = Math.floor(((i + 1) * n) / T);
-        // Ensure strictly non-empty blocks if n >= T (which implies n/T >= 1)
-        // If n < T, some blocks might be empty, but we capped T at n above.
-
-        const block = ordering.slice(start, end);
-        if (block.length > 0) {
-            blocks.push(block);
-        }
+    if (n === 0) return { sensors: [], blocks: [] };
+    if (n === 1) {
+        // If only one bus, place one sensor on it
+        return { sensors: [ordering[0]], blocks: [[ordering[0]]] };
     }
 
-    // Place sensor at the 'end' of each block (topologically downstream within the block traversal)
-    // This heuristic is good for fault isolation.
+    const k = Math.ceil(Math.sqrt(n));
+    const blocks = [];
+    for (let i = 0; i < n; i += k) {
+        blocks.push(ordering.slice(i, i + k));
+    }
+
+    // Place sensor at the last bus of each block
     const sensors = blocks.map(block => block[block.length - 1]);
 
     return { sensors, blocks };
