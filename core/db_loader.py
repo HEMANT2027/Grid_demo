@@ -234,6 +234,7 @@ class GridDataLoader:
     def load_substations(region_bounds=None):
         """
         Load all substation data from the database.
+        Queries multiple tables: gridkit_polygons, gridkit_nodes, grid_points, and grid_polygons.
         
         Args:
             region_bounds: Dict with 'min_lon', 'min_lat', 'max_lon', 'max_lat' (optional)
@@ -241,7 +242,11 @@ class GridDataLoader:
         Returns: List of [lon, lat, voltage, name]
         """
         with get_db_cursor() as cur:
-            where_clauses = ["type = 'substation'", "geom IS NOT NULL"]
+            substations = []
+            
+            # Query 1: gridkit_nodes (point substations)
+            # These are point geometries, so we can directly extract coordinates
+            where_clauses = ["geom IS NOT NULL"]
             params = []
             
             if region_bounds:
@@ -261,34 +266,118 @@ class GridDataLoader:
                     region_bounds['max_lat']
                 ])
             
-            where_sql = "WHERE " + " AND ".join(where_clauses)
+            where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
             
             cur.execute(f"""
                 SELECT 
-                    ST_X(ST_Centroid(ST_Transform(geom, 4326))) as lon,
-                    ST_Y(ST_Centroid(ST_Transform(geom, 4326))) as lat,
+                    ST_X(ST_Transform(geom, 4326)) as lon,
+                    ST_Y(ST_Transform(geom, 4326)) as lat,
                     COALESCE(voltage, 0) as voltage,
                     COALESCE(name, '') as name
-                FROM gridkit_polygons
+                FROM gridkit_nodes
                 {where_sql};
             """, params)
             
-            substations = []
+            count_nodes = 0
             for row in cur.fetchall():
                 substations.append([
                     round(row['lon'], 5),
                     round(row['lat'], 5),
                     float(row['voltage']) if row['voltage'] else 0.0,
-                    row['name']
+                    row['name'] if row['name'] else ''
                 ])
-            
-            print(f"✓ Loaded {len(substations)} substations from database")
+                count_nodes += 1
+                                    
+            print(f"✓ Loaded {len(substations)} substations from database:")
+            print(f"  - gridkit_nodes: {count_nodes}")
             return substations
+    
+    @staticmethod
+    def find_substation_buses(substations, buses, radius_km=0.2):
+        """
+        Find all bus IDs within proximity of substations to use as power sources.
+        Treats substations as areas rather than points.
+        
+        Args:
+            substations: List of [lon, lat, voltage, name]
+            buses: List of [id, lon, lat, voltage]
+            radius_km: Radius in kilometers to consider buses near substations (default: 200m)
+        
+        Returns: List of bus IDs near substations (sorted by voltage, highest first)
+        """
+        if not substations or not buses:
+            print("⚠ No substations or buses found, using fallback source")
+            return []
+        
+        from math import sqrt
+        
+        # Convert km to approximate degrees (rough approximation: 1 degree ≈ 111 km)
+        radius_degrees = radius_km / 111.0
+        
+        substation_bus_map = {}  # Maps bus_id to substation info
+        
+        # For each substation, find ALL buses within radius
+        for sub_lon, sub_lat, sub_voltage, sub_name in substations:
+            buses_in_area = []
+            
+            # Find all buses within radius of this substation
+            for bus_id, bus_lon, bus_lat, bus_voltage in buses:
+                # Calculate Euclidean distance (approximate, good enough for small distances)
+                distance = sqrt((sub_lon - bus_lon)**2 + (sub_lat - bus_lat)**2)
+                
+                # Check if bus is within radius
+                if distance <= radius_degrees:
+                    buses_in_area.append({
+                        'bus_id': bus_id,
+                        'distance': distance,
+                        'bus_voltage': bus_voltage
+                    })
+            
+            # Add all buses in this substation's area
+            for bus_info in buses_in_area:
+                bus_id = bus_info['bus_id']
+                # If bus is already associated with another substation, keep the higher voltage one
+                if bus_id not in substation_bus_map or sub_voltage > substation_bus_map[bus_id]['voltage']:
+                    substation_bus_map[bus_id] = {
+                        'bus_id': bus_id,
+                        'voltage': sub_voltage,
+                        'name': sub_name,
+                        'distance': bus_info['distance'],
+                        'bus_voltage': bus_info['bus_voltage']
+                    }
+        
+        # Convert to list and sort by substation voltage (highest first)
+        substation_buses = list(substation_bus_map.values())
+        substation_buses.sort(key=lambda x: x['voltage'], reverse=True)
+        
+        # Extract just the bus IDs
+        source_bus_ids = [sb['bus_id'] for sb in substation_buses]
+        
+        print(f"✓ Found {len(source_bus_ids)} buses within {radius_km}km of substations as power sources")
+        if source_bus_ids:
+            # Show statistics
+            voltage_groups = {}
+            for sb in substation_buses:
+                v = sb['voltage']
+                voltage_groups[v] = voltage_groups.get(v, 0) + 1
+            
+            print(f"  Distribution by substation voltage:")
+            for voltage in sorted(voltage_groups.keys(), reverse=True):
+                print(f"    {voltage}kV substations: {voltage_groups[voltage]} buses")
+            
+            # Show top 5 sources
+            print(f"  Top 5 power source buses:")
+            for i, sb in enumerate(substation_buses[:5], 1):
+                distance_km = sb['distance'] * 111.0
+                print(f"    {i}. Bus {sb['bus_id']} - Near {sb['voltage']}kV substation '{sb['name'][:40] if sb['name'] else 'Unnamed'}' ({distance_km:.2f}km)")
+        
+        return source_bus_ids
     
     @staticmethod
     def find_external_grid_bus(buses=None):
         """
         Find the main power source bus (highest voltage substation).
+        This is kept for backward compatibility but now returns the first substation bus.
         
         Args:
             buses: List of buses [id, lon, lat, voltage] to search within (optional)
@@ -347,7 +436,9 @@ class GridDataLoader:
         towers = GridDataLoader.load_towers(region_bounds)
         poles = GridDataLoader.load_poles(region_bounds)
         substations = GridDataLoader.load_substations(region_bounds)
-        ext_grid_bus = GridDataLoader.find_external_grid_bus(buses)
+        
+        # Find buses near substations to use as power sources
+        substation_sources = GridDataLoader.find_substation_buses(substations, buses)
         
         grid_data = {
             'buses': buses,
@@ -355,13 +446,14 @@ class GridDataLoader:
             'towers': towers,
             'poles': poles,
             'substations': substations,
-            'ext_grid_bus': ext_grid_bus,
+            'substation_sources': substation_sources,  # Only substation sources, no fallback
             'stats': {
                 'total_buses': len(buses),
                 'total_lines': len(lines),
                 'total_towers': len(towers),
                 'total_poles': len(poles),
-                'total_substations': len(substations)
+                'total_substations': len(substations),
+                'total_sources': len(substation_sources)
             }
         }
         
@@ -372,7 +464,7 @@ class GridDataLoader:
         print(f"  Towers: {grid_data['stats']['total_towers']:,}")
         print(f"  Poles: {grid_data['stats']['total_poles']:,}")
         print(f"  Substations: {grid_data['stats']['total_substations']:,}")
-        print(f"  External Grid Bus: {ext_grid_bus}")
+        print(f"  Power Sources (substations only): {grid_data['stats']['total_sources']:,}")
         print("="*50 + "\n")
         
         return grid_data

@@ -1,20 +1,22 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import StatusBar from '../components/StatusBar';
 import ControlPanel from '../components/ControlPanel';
 import MapView from '../components/MapView';
 import SensorPanel from '../components/SensorPanel';
-import { buildAdjacencyList, getEnergizedStatus, findGoodBridgeFault, findAllSources } from '../simulation/gridEngine';
-import { placeSensorsSqrtN, readSensors, identifyFaultyBlock } from '../simulation/sensorEngine';
+import { buildAdjacencyList, getEnergizedStatus, findGoodBridgeFault } from '../simulation/gridEngine';
+import { placeSensorsIntervalBased, readSensors, identifyFaultyInterval } from '../simulation/sensorEngine';
 import '../index.css';
 
 const INITIAL_SIM_STATE = {
     energized: false,
     sensors: [],
-    blocks: [],
+    intervals: [],
+    sensorMetrics: null,
     sensorReadings: null,
     energizedStatus: null,
+    initialEnergizedStatus: null, // Store initial state to filter dead-from-start wires
     faultInfo: null,
-    faultyBlock: -1,
+    faultyInterval: -1,
     repairMode: false,
 };
 
@@ -37,6 +39,7 @@ export default function SimulationPage() {
     const [sources, setSources] = useState([]);
     const [isSelectingArea, setIsSelectingArea] = useState(false);
     const [selectedAreaBounds, setSelectedAreaBounds] = useState(null);
+    const [sensorInterval, setSensorInterval] = useState(50); // L = 50 poles
     const adjRef = useRef(null);
     const allBusesRef = useRef([]);
 
@@ -69,13 +72,18 @@ export default function SimulationPage() {
                 adjRef.current = buildAdjacencyList(data.lines);
                 allBusesRef.current = data.buses.map(b => b[0]);
 
-                // Identify all connected components and assign virtual sources
-                // This ensures the entire grid (even disconnected parts) can be energized
-                const allSources = findAllSources(adjRef.current, allBusesRef.current, data.ext_grid_bus);
-                setSources(allSources);
+                // Use ONLY substation sources as power sources
+                const substationSources = data.substation_sources || [];
+                setSources(substationSources);
+                
+                console.log(`Using ${substationSources.length} substation sources as power sources`);
 
                 const regionName = regionBounds ? 'selected area' : 'full grid';
-                showToast(`Grid loaded (${regionName}): ${data.stats.total_buses.toLocaleString()} buses, ${data.stats.total_lines.toLocaleString()} lines. Found ${allSources.length} sub-grids.`);
+                if (substationSources.length > 0) {
+                    showToast(`Grid loaded (${regionName}): ${data.stats.total_buses.toLocaleString()} buses, ${data.stats.total_lines.toLocaleString()} lines, ${substationSources.length} substations.`);
+                } else {
+                    showToast(`⚠️ Grid loaded but no substations found! Energization will not work.`);
+                }
             })
             .catch(err => {
                 console.error('Failed to load grid data:', err);
@@ -117,8 +125,9 @@ export default function SimulationPage() {
             ...prev,
             energized: true,
             energizedStatus: status,
+            initialEnergizedStatus: prev.initialEnergizedStatus || status, // Store initial state only once
             faultInfo: null,
-            faultyBlock: -1,
+            faultyInterval: -1,
             sensorReadings: prev.sensors.length > 0
                 ? readSensors(prev.sensors, status) : null,
         }));
@@ -139,21 +148,91 @@ export default function SimulationPage() {
     }, [showToast]);
 
     const handlePlaceSensors = useCallback(() => {
-        if (!adjRef.current || !gridData) return;
+        if (!gridData) return;
+        
+        // Check if grid is energized first
+        if (!simState.energized || !simState.energizedStatus) {
+            showToast('⚠️ Please energize the grid first before placing sensors');
+            return;
+        }
+        
         const t0 = performance.now();
-        // Pass 'sources' to ensure we traverse all components effectively
-        const { sensors, blocks } = placeSensorsSqrtN(adjRef.current, sources, allBusesRef.current);
+        
+        // Build bus geography map
+        const busGeoMap = new Map();
+        for (const [id, lon, lat] of gridData.buses) {
+            busGeoMap.set(id, [lon, lat]);
+        }
+        
+        // Use poles/towers for sensor placement
+        const poles = gridData.towers && gridData.towers.length > 0 
+            ? gridData.towers 
+            : gridData.poles || [];
+        
+        if (poles.length === 0) {
+            showToast('⚠️ No poles/towers found for sensor placement');
+            return;
+        }
+        
+        // Place sensors using interval-based sampling with strategic placement
+        const result = placeSensorsIntervalBased(
+            poles, 
+            busGeoMap, 
+            sensorInterval,
+            adjRef.current,  // Pass adjacency list for DFS
+            sources,         // Pass power sources
+            gridData.substations || []  // Pass substations
+        );
+        
+        // Filter out sensors on non-energized buses
+        const energizedSensors = [];
+        const energizedIntervals = [];
+        
+        for (let i = 0; i < result.sensors.length; i++) {
+            const busId = result.sensors[i];
+            const isEnergized = simState.energizedStatus.get(busId) === 1;
+            
+            if (isEnergized) {
+                energizedSensors.push(busId);
+                energizedIntervals.push(result.intervals[i]);
+            }
+        }
+        
         const elapsed = (performance.now() - t0).toFixed(0);
+        
+        if (energizedSensors.length === 0) {
+            showToast('⚠️ No energized buses found near poles for sensor placement');
+            return;
+        }
+
+        // Recalculate metrics for filtered sensors
+        const filteredMetrics = {
+            ...result.metrics,
+            sensorsPlaced: energizedSensors.length,
+            systemResolution: result.metrics.totalPoles / energizedSensors.length,
+            originalSensors: result.sensors.length,
+            filteredOut: result.sensors.length - energizedSensors.length
+        };
 
         setSimState(prev => {
-            const readings = prev.energizedStatus
-                ? readSensors(sensors, prev.energizedStatus) : null;
-            return { ...prev, sensors, blocks, sensorReadings: readings };
+            const readings = readSensors(energizedSensors, prev.energizedStatus);
+            return { 
+                ...prev, 
+                sensors: energizedSensors, 
+                intervals: energizedIntervals,
+                sensorMetrics: filteredMetrics,
+                sensorReadings: readings 
+            };
         });
 
-        const expectedSensors = Math.ceil(Math.sqrt(allBusesRef.current.length));
-        showToast(`📡 ${sensors.length} sensors placed in ${elapsed}ms (expected: √${allBusesRef.current.length.toLocaleString()} ≈ ${expectedSensors})`);
-    }, [gridData, sources, showToast]);
+        const strategicMsg = result.metrics.strategicSensors > 0 
+            ? ` (${result.metrics.strategicSensors} strategic + ${result.metrics.intervalSensors} interval)` 
+            : '';
+        const filteredMsg = filteredMetrics.filteredOut > 0 
+            ? ` [${filteredMetrics.filteredOut} non-energized filtered]` 
+            : '';
+        showToast(`📡 ${energizedSensors.length} sensors placed in ${elapsed}ms${strategicMsg}${filteredMsg}`);
+    }, [gridData, sensorInterval, simState.energized, simState.energizedStatus, sources, showToast]);
 
     const handleTriggerFault = useCallback((lineIdx) => {
         if (!adjRef.current || !gridData) return;
@@ -181,15 +260,15 @@ export default function SimulationPage() {
         setSimState(prev => {
             const readings = prev.sensors.length > 0
                 ? readSensors(prev.sensors, status) : null;
-            const faultyBlock = readings
-                ? identifyFaultyBlock(prev.sensors, readings) : -1;
+            const faultyInterval = readings
+                ? identifyFaultyInterval(prev.sensors, readings) : -1;
 
             return {
                 ...prev,
                 energizedStatus: status,
                 faultInfo,
                 sensorReadings: readings,
-                faultyBlock,
+                faultyInterval,
             };
         });
 
@@ -289,6 +368,8 @@ export default function SimulationPage() {
                     onToggleIsolateFault={() => setIsolateFault(prev => !prev)}
                     isSelectingArea={isSelectingArea}
                     onToggleAreaSelection={handleToggleAreaSelection}
+                    sensorInterval={sensorInterval}
+                    onChangeSensorInterval={setSensorInterval}
                 />
                 <MapView
                     gridData={gridData}
@@ -305,6 +386,39 @@ export default function SimulationPage() {
                 />
                 <SensorPanel simState={simState} />
             </div>
+
+            {/* Sensor Metrics Dashboard */}
+            {simState.sensorMetrics && (
+                <div className="metrics-dashboard">
+                    <div className="metrics-title">Sensor System Metrics</div>
+                    <div className="metrics-grid">
+                        <div className="metric-card">
+                            <div className="metric-label">Total Poles (N)</div>
+                            <div className="metric-value">{simState.sensorMetrics.totalPoles.toLocaleString()}</div>
+                        </div>
+                        <div className="metric-card">
+                            <div className="metric-label">Sensors Placed (k)</div>
+                            <div className="metric-value">{simState.sensorMetrics.sensorsPlaced.toLocaleString()}</div>
+                        </div>
+                        <div className="metric-card">
+                            <div className="metric-label">Interval (L)</div>
+                            <div className="metric-value">{simState.sensorMetrics.interval}</div>
+                        </div>
+                        <div className="metric-card">
+                            <div className="metric-label">System Resolution (N/k)</div>
+                            <div className="metric-value">{simState.sensorMetrics.systemResolution.toFixed(2)}</div>
+                        </div>
+                        <div className="metric-card">
+                            <div className="metric-label">Max Span Gap</div>
+                            <div className="metric-value">{(simState.sensorMetrics.maxSpanGap / 1000).toFixed(2)} km</div>
+                        </div>
+                        <div className="metric-card">
+                            <div className="metric-label">Avg Span Gap</div>
+                            <div className="metric-value">{(simState.sensorMetrics.avgSpanGap / 1000).toFixed(2)} km</div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {toast && <div className="toast">{toast}</div>}
         </div>

@@ -73,7 +73,7 @@ function TileLayerSwitcher({ tileLayer }) {
 
 // Render transmission lines with enhanced visibility
 function LineLayer({ gridData, simState, busGeoMap, isolateFault, onTriggerFault }) {
-    const { energized, energizedStatus, faultInfo } = simState;
+    const { energized, energizedStatus, faultInfo, initialEnergizedStatus } = simState;
     const [isFaultAnimating, setIsFaultAnimating] = React.useState(false);
 
     // Animate fault lines
@@ -107,10 +107,13 @@ function LineLayer({ gridData, simState, busGeoMap, isolateFault, onTriggerFault
             if (!fromGeo || !toGeo) continue;
 
             const isFaulted = faultInfo && faultInfo.lineIdx === idx;
+            
             // When energized, check if buses are live
-            // If energizedStatus exists, use it; otherwise if energized is true, assume buses are live
             let fromLive = 0;
             let toLive = 0;
+            let fromInitiallyLive = 0;
+            let toInitiallyLive = 0;
+            
             if (energized) {
                 if (energizedStatus) {
                     fromLive = energizedStatus.get(fromBus) || 0;
@@ -120,7 +123,23 @@ function LineLayer({ gridData, simState, busGeoMap, isolateFault, onTriggerFault
                     fromLive = 1;
                     toLive = 1;
                 }
+                
+                // Check initial energized state
+                if (initialEnergizedStatus) {
+                    fromInitiallyLive = initialEnergizedStatus.get(fromBus) || 0;
+                    toInitiallyLive = initialEnergizedStatus.get(toBus) || 0;
+                } else {
+                    // No initial state yet, use current state
+                    fromInitiallyLive = fromLive;
+                    toInitiallyLive = toLive;
+                }
             }
+            
+            // Skip lines that were dead from the start (both buses dead initially)
+            if (energized && initialEnergizedStatus && !fromInitiallyLive && !toInitiallyLive) {
+                continue; // Don't render this line
+            }
+            
             const isAffected = energized && faultInfo && !isFaulted && (!fromLive || !toLive);
 
             // If isolation mode is on, only show faulted and affected lines
@@ -211,7 +230,7 @@ function LineLayer({ gridData, simState, busGeoMap, isolateFault, onTriggerFault
         }
 
         return <>{elements}</>;
-    }, [gridData, energized, energizedStatus, faultInfo, busGeoMap, isolateFault, onTriggerFault, isFaultAnimating]);
+    }, [gridData, energized, energizedStatus, initialEnergizedStatus, faultInfo, busGeoMap, isolateFault, onTriggerFault, isFaultAnimating]);
 }
 
 // Render tower markers with zoom-based visibility

@@ -32,6 +32,10 @@ def get_grid_data():
     - region: Predefined region ('delhi' for Delhi NCR)
     """
     try:
+        print("\n" + "="*60)
+        print("Received request for grid data")
+        print("="*60)
+        
         # Get query parameters
         min_voltage = request.args.get('min_voltage', type=int)
         region_bounds = None
@@ -46,6 +50,7 @@ def get_grid_data():
                 'max_lon': 77.8,
                 'max_lat': 28.9
             }
+            print(f"Using predefined region: Delhi NCR")
         elif request.args.get('min_lon'):
             region_bounds = {
                 'min_lon': request.args.get('min_lon', type=float),
@@ -53,13 +58,31 @@ def get_grid_data():
                 'max_lon': request.args.get('max_lon', type=float),
                 'max_lat': request.args.get('max_lat', type=float)
             }
+            print(f"Using custom region bounds: {region_bounds}")
+        else:
+            print("Loading ALL India grid data (no region filter)")
+        
+        if min_voltage:
+            print(f"Filtering by minimum voltage: {min_voltage} kV")
         
         # Load data from database with filters
+        print("Calling GridDataLoader.load_all_grid_data()...")
         grid_data = GridDataLoader.load_all_grid_data(region_bounds=region_bounds, min_voltage=min_voltage)
+        
+        print(f"✓ Data loaded successfully!")
+        print(f"  Buses: {len(grid_data['buses']):,}")
+        print(f"  Lines: {len(grid_data['lines']):,}")
+        print(f"  Towers: {len(grid_data['towers']):,}")
+        print(f"  Poles: {len(grid_data['poles']):,}")
+        print(f"  Substations: {len(grid_data['substations']):,}")
+        print("="*60 + "\n")
         
         return jsonify(grid_data), 200
         
     except Exception as e:
+        print(f"✗ ERROR loading grid data: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -162,5 +185,6 @@ if __name__ == '__main__':
     print(f"  GET /api/health              - Health check")
     print(f"{'='*60}\n")
     
-    app.run(host=API_HOST, port=API_PORT, debug=True)
+    # Run with debug mode but disable reloader to prevent .venv file watching issues
+    app.run(host=API_HOST, port=API_PORT, debug=True, use_reloader=False)
 
