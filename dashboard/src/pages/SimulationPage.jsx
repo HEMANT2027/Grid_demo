@@ -3,7 +3,7 @@ import StatusBar from '../components/StatusBar';
 import ControlPanel from '../components/ControlPanel';
 import MapView from '../components/MapView';
 import SensorPanel from '../components/SensorPanel';
-import { buildAdjacencyList, getEnergizedStatus, findGoodBridgeFault } from '../simulation/gridEngine';
+import { buildAdjacencyList, getEnergizedStatus } from '../simulation/gridEngine';
 import { placeSensorsIntervalBased, readSensors, identifyFaultyInterval } from '../simulation/sensorEngine';
 import '../index.css';
 
@@ -236,13 +236,14 @@ export default function SimulationPage() {
 
     const handleTriggerFault = useCallback((lineIdx) => {
         if (!adjRef.current || !gridData) return;
-        const t0 = performance.now();
-
-        // If no specific line, pick random in-service line
+        
+        // Only allow click-to-fault (lineIdx must be provided)
         if (lineIdx === undefined || lineIdx === null) {
-            lineIdx = Math.floor(Math.random() * gridData.lines.length);
+            showToast('⚠️ Please click on a line to trigger a fault');
+            return;
         }
 
+        const t0 = performance.now();
         const line = gridData.lines.find(l => l[0] === lineIdx);
         const disabled = new Set([lineIdx]);
         const status = getEnergizedStatus(adjRef.current, sources, disabled, allBusesRef.current);
@@ -272,33 +273,9 @@ export default function SimulationPage() {
             };
         });
 
-        // Auto-enable isolation if desired, or just keep previous state
-        // setIsolateFault(true); 
-
         const elapsed = (performance.now() - t0).toFixed(0);
         showToast(`💥 Fault on line ${lineIdx} — ${deadCount.toLocaleString()} buses dead (${elapsed}ms)`);
     }, [gridData, sources, showToast]);
-
-    const handleBridgeFault = useCallback(() => {
-        if (!adjRef.current || !gridData) return;
-        showToast('🔍 Searching for bridge fault...');
-
-        // Use setTimeout to not block UI
-        setTimeout(() => {
-            const t0 = performance.now();
-            const bridgeLine = findGoodBridgeFault(
-                adjRef.current, sources, gridData.lines, allBusesRef.current
-            );
-            const elapsed = (performance.now() - t0).toFixed(0);
-
-            if (bridgeLine !== null) {
-                showToast(`Bridge found in ${elapsed}ms — triggering fault...`);
-                handleTriggerFault(bridgeLine);
-            } else {
-                showToast('No bridge edges found — grid is fully redundant');
-            }
-        }, 50);
-    }, [gridData, sources, handleTriggerFault, showToast]);
 
     const handleRepairFault = useCallback(() => {
         if (!adjRef.current || !gridData) return;
@@ -356,8 +333,6 @@ export default function SimulationPage() {
                     onEnergize={handleEnergize}
                     onDeenergize={handleDeenergize}
                     onPlaceSensors={handlePlaceSensors}
-                    onTriggerFault={() => handleTriggerFault()}
-                    onTriggerBridgeFault={handleBridgeFault}
                     onRepairFault={handleRepairFault}
                     onReset={handleReset}
                     layers={layers}

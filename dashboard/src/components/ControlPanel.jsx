@@ -68,38 +68,12 @@ export default function ControlPanel({
             </div>
 
             {/* Fault Testing */}
-            <div className="panel-section">
-                <div className="section-title">
-                    <Activity size={14} /> Fault Testing
-                </div>
-                
-                {!faultInfo ? (
+                {faultInfo && (
                     <>
-                        <button
-                            className="btn-modern danger"
-                            onClick={onTriggerBridgeFault}
-                            disabled={!energized}
-                        >
-                            <Target size={16} />
-                            <div className="btn-content">
-                                <div className="btn-label">Bridge Fault</div>
-                                <div className="btn-hint">Critical line failure</div>
-                            </div>
-                        </button>
-                        
-                        <button
-                            className="btn-modern danger"
-                            onClick={onTriggerFault}
-                            disabled={!energized}
-                        >
-                            <AlertTriangle size={16} />
-                            <div className="btn-content">
-                                <div className="btn-label">Random Fault</div>
-                                <div className="btn-hint">Any line failure</div>
-                            </div>
-                        </button>
-                    </>
-                ) : (
+                    <div className="panel-section">
+                    <div className="section-title">
+                        <Activity size={14} /> Fault Testing
+                    </div>
                     <button
                         className="btn-modern success"
                         onClick={onRepairFault}
@@ -110,9 +84,6 @@ export default function ControlPanel({
                             <div className="btn-hint">Restore grid power</div>
                         </div>
                     </button>
-                )}
-
-                {faultInfo && (
                     <div className="toggle-card">
                         <div className="toggle-card-content">
                             <div className="toggle-card-icon">
@@ -128,8 +99,9 @@ export default function ControlPanel({
                             onClick={onToggleIsolateFault}
                         />
                     </div>
+                    </div>
+                    </>
                 )}
-            </div>
 
             {/* Area Selection - Only show if handlers are provided */}
             {onToggleAreaSelection && (

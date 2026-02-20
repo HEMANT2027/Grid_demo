@@ -60,24 +60,6 @@ export default function StatusBar({ gridData, simState }) {
                     </div>
                 </div>
 
-                {/* Health Card */}
-                {energized && (
-                    <div className={`status-card ${faultInfo ? 'warning' : 'success'}`}>
-                        <div className="card-icon">
-                            {faultInfo ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
-                        </div>
-                        <div className="card-content">
-                            <div className="card-label">Grid Health</div>
-                            <div className="card-value">
-                                {healthPercentage}% 
-                                <span className="card-subvalue">
-                                    ({liveBuses.toLocaleString()} / {totalBuses.toLocaleString()})
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* Sensors Card */}
                 {sensors.length > 0 && (
                     <div className="status-card">
