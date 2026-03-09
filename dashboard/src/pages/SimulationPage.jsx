@@ -74,8 +74,8 @@ export default function SimulationPage() {
         // Use proxy in development, or direct URL in production
         const apiUrl = import.meta.env.VITE_API_URL || '/api';
         
-        // Build query string from selected bounds
-        let queryString = '';
+        // Build query string from selected bounds or default to a specific region to prevent loading all of India
+        let queryString = '?region=delhi'; // Default to Delhi to save load time
         if (regionBounds) {
             queryString = `?min_lon=${regionBounds.min_lon}&min_lat=${regionBounds.min_lat}&max_lon=${regionBounds.max_lon}&max_lat=${regionBounds.max_lat}`;
         }

@@ -31,7 +31,8 @@ export default function DashboardPage() {
   useEffect(() => {
     console.log('Starting to fetch grid data...');
     const apiUrl = import.meta.env.VITE_API_URL || '/api';
-    const fetchUrl = `${apiUrl}/grid-data`;
+    // Default to 'delhi' region to prevent loading all of India at once
+    const fetchUrl = `${apiUrl}/grid-data?region=delhi`;
     console.log('Fetching from:', fetchUrl);
     
     fetch(fetchUrl)

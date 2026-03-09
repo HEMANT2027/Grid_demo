@@ -9,6 +9,7 @@ A comprehensive real-time smart grid visualization and simulation platform for I
 - **Grid Simulation**: Energize/de-energize grid segments with BFS-based power flow simulation
 - **Fault Analysis**: Inject faults into transmission lines and visualize cascading impacts with bridge fault detection
 - **Intelligent Sensor Placement**: Interval-based sensor placement (L=50 poles) with strategic positioning at substations and path endpoints
+- **Sensor Predictor**: Client-side estimation tool that predicts sensor counts using Rules R1–R3 (Feeder Exit, BFS Interval, Dead-end) with research-backed formulations
 - **Substation-Based Power Sources**: Uses actual substation locations as power sources instead of virtual nodes
 - **Geographic Area Selection**: Select specific regions for focused analysis
 
@@ -36,7 +37,8 @@ Grid_demo/
 │   │   ├── pages/               # Application pages
 │   │   │   ├── LandingPage.jsx  # Marketing landing page
 │   │   │   ├── DashboardPage.jsx # Display-only grid view
-│   │   │   └── SimulationPage.jsx # Full simulation environment
+│   │   │   ├── SimulationPage.jsx # Full simulation environment
+│   │   │   └── SensorPredictorPage.jsx # Sensor count estimator (R1–R3)
 │   │   ├── components/          # Reusable UI components
 │   │   │   ├── MapView.jsx      # Leaflet map with layers
 │   │   │   ├── ControlPanel.jsx # Simulation controls
@@ -143,13 +145,22 @@ The application will be available at `http://localhost:5173`
 5. **Trigger Fault**: Inject random or bridge faults to test resilience
 6. **Analyze Impact**: View affected lines, sensor readings, and fault isolation
 
-### Sensor Placement Strategy
+### Sensor Predictor Page
+1. Navigate to `/sensor-predictor`
+2. Adjust sliders for graph topology (nodes, substations, dead-end %, etc.)
+3. View estimated sensor counts across Rules R1–R3 in real-time
+4. Analyze sensitivity to BFS interval L
+5. Run coverage verification to confirm full grid observability
+6. Export coverage reports
 
-The system uses a hybrid approach:
-- **Strategic Sensors**: One per substation + DFS path endpoints
-- **Interval Sensors**: Every L=50 poles for regular coverage
-- **Filtering**: Only energized buses receive sensors
-- **Metrics**: Real-time dashboard shows N, k, N/k, and span gaps
+### Sensor Placement Strategy (Rules R1–R3)
+
+The system uses a BFS-based rule system:
+- **R1 (Feeder Exit)**: One sensor per feeder leaving a substation cluster (IEC 61850)
+- **R2 (BFS Interval)**: Sensor every L hops along BFS paths (IEEE C37.118, CEA India)
+- **R3 (Dead-end)**: Sensor at every terminal/leaf node (graph domination theory)
+- **Deduplication**: Rules applied in order R1 → R3 → R2, no double-counting
+- **Coverage guarantee**: Every node within L hops of the nearest sensor
 
 ### Fault Detection
 

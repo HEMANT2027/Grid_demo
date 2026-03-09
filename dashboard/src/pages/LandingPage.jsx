@@ -30,6 +30,9 @@ const LandingPage = () => {
                     <button onClick={() => handleNavigate('/simulation')} className="nav-link" style={styles.navLink}>
                         Simulation Lab
                     </button>
+                    <button onClick={() => handleNavigate('/sensor-predictor')} className="nav-link" style={styles.navLink}>
+                        Sensor Predictor
+                    </button>
                 </div>
             </nav>
 
@@ -81,6 +84,13 @@ const LandingPage = () => {
                         title="Fault Analysis"
                         desc="Instantaneous detection and isolation of grid faults with predictive impact analysis and reporting."
                         delay={0.6}
+                        mounted={mounted}
+                    />
+                    <Feature
+                        icon={<Zap size={24} color="#3b82f6" />}
+                        title="Sensor Predictor"
+                        desc="Estimate how many sensors are needed for any grid region, broken down by placement rule (feeder exit, interval, dead-end, junction)."
+                        delay={0.7}
                         mounted={mounted}
                     />
                 </div>

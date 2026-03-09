@@ -192,6 +192,8 @@ The dashboard will automatically connect to the API server via the Vite proxy (c
 
 Open browser to `http://localhost:5173` and verify the grid loads correctly.
 
+> **Note on Performance:** By default, the dashboard is configured to only load the `delhi` region (`fetch('/api/grid-data?region=delhi')`) to prevent the browser from freezing while trying to render the entire India grid (1.5+ million nodes). You can remove this parameter in `SimulationPage.jsx` and `DashboardPage.jsx` when you are ready to load the full dataset.
+
 ```bash
 # Navigate to dashboard
 cd dashboard
