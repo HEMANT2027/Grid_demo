@@ -351,19 +351,31 @@ function SubstationLayer({ gridData }) {
 
 // Render sensor markers
 function SensorLayer({ simState, busGeoMap }) {
-    const { sensors, sensorReadings } = simState;
+    const { sensors, sensorReadings, sensorMetrics } = simState;
     if (!sensors || sensors.length === 0) return null;
+
+    const duplicateBuses = new Set(sensorMetrics?.duplicateBuses || []);
 
     return (
         <>
             {sensors.map((busId, i) => {
                 const geo = busGeoMap.get(busId);
                 if (!geo) return null;
+                
+                const isDuplicate = duplicateBuses.has(busId);
+                
                 // If sensorReadings exists, use it; otherwise if sensors are placed but no readings yet, assume live
                 const isLive = sensorReadings
                     ? (sensorReadings.get(busId) || 0) === 1
                     : true; // Default to live if no readings available
-                const color = isLive ? '#00E676' : '#FF1744';
+                
+                // Color logic: duplicates get orange/red-orange color
+                let color;
+                if (isDuplicate) {
+                    color = isLive ? '#fbff00ff' : '#D84315'; // Yellow for live duplicate, dark orange for dead duplicate
+                } else {
+                    color = isLive ? '#00E676' : '#FF1744'; // Green for live, red for dead
+                }
 
                 return (
                     <CircleMarker
@@ -377,7 +389,10 @@ function SensorLayer({ simState, busGeoMap }) {
                             weight: 2,
                         }}
                     >
-                        <Tooltip>Sensor S{i + 1} | Bus {busId} | {isLive ? 'LIVE' : 'DEAD'}</Tooltip>
+                        <Tooltip>
+                            Sensor S{i + 1} | Bus {busId} | {isLive ? 'LIVE' : 'DEAD'}
+                            {isDuplicate && ' | DUPLICATE'}
+                        </Tooltip>
                     </CircleMarker>
                 );
             })}

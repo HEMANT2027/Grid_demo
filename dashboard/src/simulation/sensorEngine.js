@@ -1,19 +1,15 @@
 /**
  * Sensor Placement Engine
  * 
- * Implements interval-based sampling on poles/towers with strategic placement:
- * - One sensor just after each power source (substation)
- * - One sensor at the end of each DFS path from power sources
- * - Regular interval sensors every L poles
+ * Strategy:
+ * - Place sensor at START of each energized wire path (from substation)
+ * - Place sensor every K poles along the path
+ * - Place sensor at END of each wire path
+ * - Count duplicate sensors at substations
  */
 
 /**
  * Haversine formula to calculate distance between two lat/lon points in meters.
- * @param {number} lat1 - Latitude of point 1
- * @param {number} lon1 - Longitude of point 1
- * @param {number} lat2 - Latitude of point 2
- * @param {number} lon2 - Longitude of point 2
- * @returns {number} Distance in meters
  */
 function haversineDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Earth's radius in meters
@@ -28,93 +24,59 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
     
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     
-    return R * c; // Distance in meters
+    return R * c;
 }
 
 /**
- * Perform DFS from power sources to find path endpoints.
- * @param {Map} adj - Adjacency list
- * @param {Array} sources - Power source bus IDs
- * @returns {Object} { endpoints: Set, pathOrder: Array }
+ * Find nearest bus to a given location.
  */
-function findPathEndpoints(adj, sources) {
-    const visited = new Set();
-    const endpoints = new Set();
-    const pathOrder = [];
+function findNearestBus(lon, lat, busGeoMap, maxRadius = 200) {
+    let nearestBusId = null;
+    let minDistance = Infinity;
     
-    function dfs(node, depth) {
-        if (visited.has(node)) return;
-        
-        visited.add(node);
-        pathOrder.push(node);
-        
-        const neighbors = adj.get(node) || [];
-        const unvisitedNeighbors = neighbors.filter(n => !visited.has(n.to));
-        
-        // If no unvisited neighbors, this is an endpoint
-        if (unvisitedNeighbors.length === 0 && depth > 0) {
-            endpoints.add(node);
-        }
-        
-        // Continue DFS
-        for (const { to } of unvisitedNeighbors) {
-            dfs(to, depth + 1);
+    for (const [busId, [busLon, busLat]] of busGeoMap.entries()) {
+        const distance = haversineDistance(lat, lon, busLat, busLon);
+        if (distance < minDistance && distance < maxRadius) {
+            minDistance = distance;
+            nearestBusId = busId;
         }
     }
     
-    // Run DFS from each source
-    for (const source of sources) {
-        if (!visited.has(source)) {
-            dfs(source, 0);
-        }
-    }
-    
-    return { endpoints, pathOrder };
+    return nearestBusId;
 }
 
 /**
- * Find buses near substations (within radius).
- * @param {Array} substations - Array of [lon, lat, voltage, name]
- * @param {Map} busGeoMap - Map of bus ID to [lon, lat]
- * @param {number} maxRadius - Maximum radius in meters
- * @returns {Map} Map of substation location to nearest bus ID
+ * Count poles between two buses.
  */
-function findSubstationBuses(substations, busGeoMap, maxRadius = 2000) {
-    const substationBusMap = new Map();
+function countPolesBetweenBuses(bus1, bus2, busGeoMap, poles) {
+    const [lon1, lat1] = busGeoMap.get(bus1) || [0, 0];
+    const [lon2, lat2] = busGeoMap.get(bus2) || [0, 0];
     
-    for (const [subLon, subLat, voltage, name] of substations) {
-        let nearestBusId = null;
-        let minDistance = Infinity;
+    const lineLength = haversineDistance(lat1, lon1, lat2, lon2);
+    
+    if (lineLength < 100) return 0;
+    
+    let poleCount = 0;
+    
+    for (const [poleLon, poleLat] of poles) {
+        const distToStart = haversineDistance(lat1, lon1, poleLat, poleLon);
+        const distToEnd = haversineDistance(lat2, lon2, poleLat, poleLon);
         
-        for (const [busId, [busLon, busLat]] of busGeoMap.entries()) {
-            const distance = haversineDistance(subLat, subLon, busLat, busLon);
-            if (distance < minDistance && distance < maxRadius) {
-                minDistance = distance;
-                nearestBusId = busId;
-            }
-        }
+        const tolerance = Math.max(200, lineLength * 0.05);
         
-        if (nearestBusId !== null) {
-            const key = `${subLon},${subLat}`;
-            substationBusMap.set(key, nearestBusId);
+        if (Math.abs((distToStart + distToEnd) - lineLength) <= tolerance) {
+            poleCount++;
         }
     }
     
-    return substationBusMap;
+    return poleCount;
 }
 
 /**
- * Place sensors using interval-based sampling with strategic placement.
- * @param {Array} poles - Array of [lon, lat] pole/tower locations
- * @param {Map} busGeoMap - Map of bus ID to [lon, lat]
- * @param {number} interval - Place sensor every L poles (e.g., 50)
- * @param {Map} adj - Adjacency list for DFS
- * @param {Array} sources - Power source bus IDs
- * @param {Array} substations - Array of [lon, lat, voltage, name]
- * @returns {Object} { sensors: busIds[], poleIndices: [], intervals: [], metrics: {} }
+ * Place sensors: start of each path, every K poles, and at end.
  */
-export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj = null, sources = [], substations = []) {
-    if (!poles || poles.length === 0) {
+export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj = null, sources = [], substations = [], energizedStatus = null) {
+    if (!poles || poles.length === 0 || !adj || sources.length === 0 || !energizedStatus) {
         return {
             sensors: [],
             poleIndices: [],
@@ -126,125 +88,203 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
                 maxSpanGap: 0,
                 avgSpanGap: 0,
                 strategicSensors: 0,
-                intervalSensors: 0
+                intervalSensors: 0,
+                duplicateSensorsAtSubstations: 0
             }
         };
     }
 
     const N = poles.length;
-    const strategicSensors = new Set(); // Sensors near substations and endpoints
-    const intervalSensorIndices = [];
+    const allSensors = []; // All sensors including duplicates
+    const sensorIntervals = []; // Pole count for each sensor
+    const visitedEdges = new Set();
+    const traversalLog = [];
     
-    // Step 1: Place sensors near substations (one per substation)
-    if (substations && substations.length > 0) {
-        const substationBusMap = findSubstationBuses(substations, busGeoMap);
-        const usedSubstationBuses = new Set();
+    // Find substation buses
+    const substationBuses = new Set();
+    for (const [subLon, subLat] of substations) {
+        const busId = findNearestBus(subLon, subLat, busGeoMap);
+        if (busId !== null) {
+            substationBuses.add(busId);
+        }
+    }
+    
+    console.log(`Found ${substationBuses.size} substation buses`);
+    
+    /**
+     * Check which substation area a bus belongs to (within radius).
+     */
+    function getSubstationForBus(busId) {
+        const [busLon, busLat] = busGeoMap.get(busId) || [0, 0];
         
-        for (const busId of substationBusMap.values()) {
-            if (!usedSubstationBuses.has(busId)) {
-                strategicSensors.add(busId);
-                usedSubstationBuses.add(busId);
+        for (let i = 0; i < substations.length; i++) {
+            const [subLon, subLat] = substations[i];
+            const distance = haversineDistance(busLat, busLon, subLat, subLon);
+            if (distance < 300) { // Within 200m of substation
+                return i; // Return substation index
             }
         }
         
-        console.log(`Placed ${strategicSensors.size} sensors near substations`);
+        return null; // Not in any substation area
     }
     
-    // Step 2: Place sensors at path endpoints (if DFS info available)
-    if (adj && sources && sources.length > 0) {
-        const { endpoints } = findPathEndpoints(adj, sources);
+    /**
+     * DFS to traverse path, placing sensors every K poles and at the end.
+     */
+    function traversePath(currentBus, polesSinceLastSensor, lastSensorBus, depth = 0, pathLog = []) {
+        const neighbors = adj.get(currentBus) || [];
+        let hasUnvisitedEnergizedNeighbors = false;
         
-        for (const endpointBus of endpoints) {
-            strategicSensors.add(endpointBus);
-        }
-        
-        console.log(`Added ${endpoints.size} sensors at path endpoints`);
-    }
-    
-    // Step 3: Place interval-based sensors every L poles
-    for (let i = 0; i < N; i += interval) {
-        intervalSensorIndices.push(i);
-    }
-    
-    // Find nearest bus for each interval sensor
-    const intervalSensors = [];
-    for (const poleIdx of intervalSensorIndices) {
-        const [poleLon, poleLat] = poles[poleIdx];
-        
-        let nearestBusId = null;
-        let minDistance = Infinity;
-        
-        for (const [busId, [busLon, busLat]] of busGeoMap.entries()) {
-            const distance = haversineDistance(poleLat, poleLon, busLat, busLon);
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestBusId = busId;
+        for (const { to: nextBus, lineIdx } of neighbors) {
+            if (visitedEdges.has(lineIdx)) continue;
+            if (energizedStatus.get(nextBus) !== 1) continue;
+            
+            hasUnvisitedEnergizedNeighbors = true;
+            visitedEdges.add(lineIdx);
+            
+            const poleCount = countPolesBetweenBuses(currentBus, nextBus, busGeoMap, poles);
+            const newPoleCount = polesSinceLastSensor + poleCount;
+            
+            pathLog.push(`${'  '.repeat(depth)}Line ${lineIdx} (Bus ${currentBus} → Bus ${nextBus}): ${poleCount} poles`);
+            
+            // Check if we should place a sensor after this segment
+            if (newPoleCount >= interval) {
+                // Place sensor at nextBus
+                allSensors.push(nextBus);
+                sensorIntervals.push(newPoleCount);
+                pathLog.push(`${'  '.repeat(depth)}✓ INTERVAL SENSOR placed at Bus ${nextBus} (after ${newPoleCount} poles)`);
+                
+                // Continue with reset pole count
+                traversePath(nextBus, 0, nextBus, depth + 1, pathLog);
+            } else {
+                // Continue without placing sensor
+                traversePath(nextBus, newPoleCount, lastSensorBus, depth + 1, pathLog);
             }
         }
         
-        if (nearestBusId !== null) {
-            intervalSensors.push(nearestBusId);
+        // End of path - place sensor if not already placed
+        if (!hasUnvisitedEnergizedNeighbors && polesSinceLastSensor > 0) {
+            if (currentBus !== lastSensorBus) {
+                allSensors.push(currentBus);
+                sensorIntervals.push(polesSinceLastSensor);
+                pathLog.push(`${'  '.repeat(depth)}✓ END SENSOR placed at Bus ${currentBus} (after ${polesSinceLastSensor} poles)`);
+            }
         }
     }
     
-    // Step 4: Combine strategic and interval sensors (remove duplicates)
-    const allSensors = [...strategicSensors, ...intervalSensors];
-    const uniqueSensors = [...new Set(allSensors)];
+    // Track sensors per substation
+    const sensorsPerSubstation = new Map();
     
-    // Step 5: Create intervals (groups of poles between sensors)
-    const intervals = [];
-    const sensorPoleIndices = [];
-    
-    // Map sensors back to pole indices for interval calculation
-    for (const sensorBus of uniqueSensors) {
-        const [sensorLon, sensorLat] = busGeoMap.get(sensorBus) || [0, 0];
+    // Explore from each substation
+    let substationCount = 0;
+    for (const substationBus of substationBuses) {
+        substationCount++;
+        const pathLog = [];
         
-        // Find nearest pole to this sensor
-        let nearestPoleIdx = 0;
-        let minDistance = Infinity;
+        pathLog.push(`\n=== SUBSTATION ${substationCount} (Bus ${substationBus}) ===`);
         
-        for (let i = 0; i < poles.length; i++) {
-            const [poleLon, poleLat] = poles[i];
-            const distance = haversineDistance(sensorLat, sensorLon, poleLat, poleLon);
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestPoleIdx = i;
+        const outgoingEdges = adj.get(substationBus) || [];
+        const energizedOutgoing = outgoingEdges.filter(({ to }) => energizedStatus.get(to) === 1);
+        
+        pathLog.push(`Found ${energizedOutgoing.length} energized outgoing paths`);
+        
+        let sensorsAtThisSubstation = 0;
+        
+        // For each outgoing path
+        for (const { to: nextBus, lineIdx } of energizedOutgoing) {
+            if (visitedEdges.has(lineIdx)) {
+                pathLog.push(`  Path to Bus ${nextBus} already visited`);
+                continue;
+            }
+            
+            // Place sensor at START (substation)
+            allSensors.push(substationBus);
+            sensorIntervals.push(0);
+            sensorsAtThisSubstation++;
+            
+            pathLog.push(`  ✓ START SENSOR placed at Bus ${substationBus} for path to Bus ${nextBus}`);
+            
+            visitedEdges.add(lineIdx);
+            
+            const poleCount = countPolesBetweenBuses(substationBus, nextBus, busGeoMap, poles);
+            pathLog.push(`    Line ${lineIdx}: ${poleCount} poles`);
+            
+            // Check if we need sensor after first segment
+            if (poleCount >= interval) {
+                allSensors.push(nextBus);
+                sensorIntervals.push(poleCount);
+                pathLog.push(`    ✓ INTERVAL SENSOR placed at Bus ${nextBus} (after ${poleCount} poles)`);
+                
+                // Continue traversing from nextBus
+                traversePath(nextBus, 0, nextBus, 2, pathLog);
+            } else {
+                // Continue traversing
+                traversePath(nextBus, poleCount, substationBus, 2, pathLog);
             }
         }
         
-        sensorPoleIndices.push(nearestPoleIdx);
-    }
-    
-    // Sort sensor pole indices
-    sensorPoleIndices.sort((a, b) => a - b);
-    
-    // Create intervals between sorted sensors
-    for (let i = 0; i < sensorPoleIndices.length; i++) {
-        const startIdx = sensorPoleIndices[i];
-        const endIdx = i < sensorPoleIndices.length - 1 
-            ? sensorPoleIndices[i + 1] 
-            : N;
+        sensorsPerSubstation.set(substationBus, sensorsAtThisSubstation);
+        pathLog.push(`  Total sensors at this substation: ${sensorsAtThisSubstation}`);
         
-        const intervalPoles = [];
-        for (let j = startIdx; j < endIdx && j < N; j++) {
-            intervalPoles.push(j);
-        }
-        intervals.push(intervalPoles);
+        traversalLog.push(...pathLog);
     }
     
-    // Step 6: Calculate metrics
+    // Calculate duplicates - count sensors in each substation area
+    const sensorsPerSubstationArea = new Map(); // substationIndex -> Set of sensor busIds
+    const sensorToSubstation = new Map(); // busId -> substationIndex
+    
+    for (const busId of allSensors) {
+        const substationIdx = getSubstationForBus(busId);
+        if (substationIdx !== null) {
+            if (!sensorsPerSubstationArea.has(substationIdx)) {
+                sensorsPerSubstationArea.set(substationIdx, new Set());
+            }
+            sensorsPerSubstationArea.get(substationIdx).add(busId);
+            sensorToSubstation.set(busId, substationIdx);
+        }
+    }
+    
+    // Count duplicates: for each substation area, we need only 1 sensor, rest are duplicates
+    let duplicateSensors = 0;
+    for (const [substationIdx, sensorSet] of sensorsPerSubstationArea.entries()) {
+        if (sensorSet.size > 1) {
+            duplicateSensors += (sensorSet.size - 1); // All but one are duplicates
+        }
+    }
+    
+    // Track which buses are duplicates (not the first one in each substation area)
+    const duplicateBuses = new Set();
+    for (const [substationIdx, sensorSet] of sensorsPerSubstationArea.entries()) {
+        if (sensorSet.size > 1) {
+            const sensorsArray = Array.from(sensorSet);
+            // Mark all except the first as duplicates
+            for (let i = 1; i < sensorsArray.length; i++) {
+                duplicateBuses.add(sensorsArray[i]);
+            }
+        }
+    }
+    
+    // Create unique sensor list
+    const uniqueSensors = [];
+    const uniqueIntervals = [];
+    const seenBuses = new Set();
+    
+    for (let i = 0; i < allSensors.length; i++) {
+        if (!seenBuses.has(allSensors[i])) {
+            uniqueSensors.push(allSensors[i]);
+            uniqueIntervals.push(sensorIntervals[i]);
+            seenBuses.add(allSensors[i]);
+        }
+    }
+    
+    // Calculate metrics
     const k = uniqueSensors.length;
     const systemResolution = k > 0 ? N / k : 0;
     
-    // Calculate span gaps (geographic distances between consecutive sensors)
     const spanGaps = [];
-    for (let i = 0; i < sensorPoleIndices.length - 1; i++) {
-        const idx1 = sensorPoleIndices[i];
-        const idx2 = sensorPoleIndices[i + 1];
-        
-        const [lon1, lat1] = poles[idx1];
-        const [lon2, lat2] = poles[idx2];
-        
+    for (let i = 0; i < uniqueSensors.length - 1; i++) {
+        const [lon1, lat1] = busGeoMap.get(uniqueSensors[i]) || [0, 0];
+        const [lon2, lat2] = busGeoMap.get(uniqueSensors[i + 1]) || [0, 0];
         const distance = haversineDistance(lat1, lon1, lat2, lon2);
         spanGaps.push(distance);
     }
@@ -257,35 +297,37 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
     const metrics = {
         totalPoles: N,
         sensorsPlaced: k,
+        totalSensorsBeforeDedup: allSensors.length,
         systemResolution: systemResolution,
         maxSpanGap: maxSpanGap,
         avgSpanGap: avgSpanGap,
         interval: interval,
-        strategicSensors: strategicSensors.size,
-        intervalSensors: intervalSensors.length
+        strategicSensors: substationBuses.size,
+        intervalSensors: k - substationBuses.size,
+        duplicateSensorsAtSubstations: duplicateSensors,
+        duplicateBuses: Array.from(duplicateBuses), // List of bus IDs that are duplicates
+        traversalLog: traversalLog
     };
     
-    console.log('Interval-Based Sensor Placement:');
-    console.log(`  Total Poles (N): ${N}`);
-    console.log(`  Sensors Placed (k): ${k}`);
-    console.log(`  Strategic Sensors: ${strategicSensors.size} (substations + endpoints)`);
-    console.log(`  Interval Sensors: ${intervalSensors.length}`);
-    console.log(`  Interval (L): ${interval}`);
+    console.log('Wire Path Sensor Placement:');
+    console.log(`  Total Sensors (with duplicates): ${allSensors.length}`);
+    console.log(`  Unique Sensors: ${k}`);
+    console.log(`  Duplicate Sensors at Substations: ${duplicateSensors}`);
     console.log(`  System Resolution (N/k): ${systemResolution.toFixed(2)}`);
-    console.log(`  Max Span Gap: ${(maxSpanGap / 1000).toFixed(2)} km`);
-    console.log(`  Avg Span Gap: ${(avgSpanGap / 1000).toFixed(2)} km`);
+    
+    console.log('\n=== TRAVERSAL LOG ===');
+    traversalLog.forEach(line => console.log(line));
     
     return {
         sensors: uniqueSensors,
-        poleIndices: sensorPoleIndices,
-        intervals: intervals,
+        poleIndices: [],
+        intervals: uniqueIntervals,
         metrics: metrics
     };
 }
 
 /**
  * Read sensor status from energized map.
- * @returns {Map<number, number>} sensorBus -> 0|1
  */
 export function readSensors(sensors, energizedStatus) {
     const readings = new Map();
@@ -297,30 +339,17 @@ export function readSensors(sensors, energizedStatus) {
 
 /**
  * Identify the faulty interval between sensors.
- * Returns the interval index where fault occurred.
- * @param {Array} sensors - Array of sensor bus IDs
- * @param {Map} sensorReadings - Map of sensor readings
- * @returns {number} interval index or -1
  */
 export function identifyFaultyInterval(sensors, sensorReadings) {
     for (let i = 0; i < sensors.length; i++) {
         const status = sensorReadings.get(sensors[i]) || 0;
         if (status === 0) {
-            // Found first dead sensor
-            // Fault is in the interval BEFORE this sensor
             return i;
         }
     }
-    return -1; // No fault detected
+    return -1;
 }
 
-// Legacy function for backward compatibility
 export function identifyFaultyBlock(sensors, sensorReadings) {
     return identifyFaultyInterval(sensors, sensorReadings);
-}
-
-// Legacy function for backward compatibility (deprecated)
-export function placeSensorsSqrtN(adj, sources, allBuses) {
-    console.warn('placeSensorsSqrtN is deprecated. Use placeSensorsIntervalBased instead.');
-    return { sensors: [], blocks: [], intervals: [] };
 }

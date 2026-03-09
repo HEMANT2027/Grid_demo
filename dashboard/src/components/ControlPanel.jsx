@@ -17,14 +17,15 @@ import {
     Target,
     Eye,
     EyeOff,
-    Crop
+    Crop,
+    Download
 } from 'lucide-react';
 
 export default function ControlPanel({
     gridData, simState, onEnergize, onDeenergize, onPlaceSensors,
     onTriggerFault, onTriggerBridgeFault, onRepairFault, onReset, layers, onToggleLayer,
     tileLayer, onChangeTile, isolateFault, onToggleIsolateFault,
-    isSelectingArea, onToggleAreaSelection
+    isSelectingArea, onToggleAreaSelection, sensorInterval, onChangeSensorInterval, onExportTraversalLog
 }) {
     const { energized, sensors, faultInfo } = simState;
 
@@ -60,10 +61,22 @@ export default function ControlPanel({
                 </div>
 
                 {sensors.length > 0 && (
-                    <div className="info-badge">
-                        <Radio size={12} />
-                        {sensors.length} sensors in {simState.blocks?.length || 0} blocks
-                    </div>
+                    <>
+                        <div className="info-badge">
+                            <Radio size={12} />
+                            {sensors.length} sensors placed
+                        </div>
+                        {onExportTraversalLog && (
+                            <button 
+                                className="action-btn secondary" 
+                                onClick={onExportTraversalLog}
+                                style={{ marginTop: '8px' }}
+                            >
+                                <Download size={18} />
+                                <span>Export Traversal Log</span>
+                            </button>
+                        )}
+                    </>
                 )}
             </div>
 

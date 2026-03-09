@@ -33,6 +33,11 @@ export default function SensorPanel({ simState }) {
         <div className="sensor-panel">
             <div className="panel-header">
                 <h3><Radio size={14} style={{ marginRight: 8 }} /> Sensors ({sensors.length})</h3>
+                {sensorMetrics && sensorMetrics.duplicateSensorsAtSubstations > 0 && (
+                    <div style={{ fontSize: 10, color: '#f59e0b', marginTop: 4 }}>
+                        {sensorMetrics.duplicateSensorsAtSubstations} duplicate{sensorMetrics.duplicateSensorsAtSubstations > 1 ? 's' : ''} at substations
+                    </div>
+                )}
             </div>
 
             {sensorReadings && (
@@ -93,9 +98,9 @@ export default function SensorPanel({ simState }) {
 
                         <div style={{ marginTop: 8, fontSize: 11, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: 6, borderRadius: 4 }}>
                             Fault isolated in interval between <strong>S{faultyInterval > 0 ? faultyInterval : 'Source'}</strong> and <strong>S{faultyInterval + 1}</strong>
-                            {intervals && intervals[faultyInterval] && (
+                            {intervals && intervals[faultyInterval] !== undefined && (
                                 <div style={{ marginTop: 4 }}>
-                                    Interval contains {intervals[faultyInterval].length} poles
+                                    Interval contains {intervals[faultyInterval]} poles
                                 </div>
                             )}
                         </div>
@@ -107,16 +112,21 @@ export default function SensorPanel({ simState }) {
                 {sensors.map((busId, i) => {
                     const isLive = sensorReadings ? (sensorReadings.get(busId) || 0) === 1 : true;
                     const isFaultInterval = faultyInterval === i;
-                    const intervalSize = intervals && intervals[i] ? intervals[i].length : 0;
+                    const intervalSize = intervals && intervals[i] !== undefined ? intervals[i] : 0;
+                    const isDuplicate = sensorMetrics?.duplicateBuses?.includes(busId);
 
                     return (
                         <div
                             key={busId}
                             className={`sensor-item ${isFaultInterval ? 'fault-block' : ''}`}
+                            style={isDuplicate ? { borderLeft: '3px solid #FF9800' } : {}}
                         >
-                            <div className={`sensor-dot ${isLive ? 'live' : 'dead'}`} />
+                            <div className={`sensor-dot ${isLive ? 'live' : 'dead'}`} style={isDuplicate ? { backgroundColor: '#FF9800' } : {}} />
                             <span className="sensor-id">S{i + 1}</span>
                             <span className="sensor-bus">B{busId}</span>
+                            {isDuplicate && (
+                                <span style={{ fontSize: 9, color: '#FF9800', fontWeight: 600 }}>DUP</span>
+                            )}
                             <span className="sensor-bus" style={{ fontSize: 10, color: '#555' }}>
                                 [{intervalSize} poles]
                             </span>

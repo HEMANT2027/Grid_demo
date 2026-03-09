@@ -48,6 +48,27 @@ export default function SimulationPage() {
         setTimeout(() => setToast(null), 3000);
     }, []);
 
+    // Export traversal log to file
+    const handleExportTraversalLog = useCallback(() => {
+        if (!simState.sensorMetrics || !simState.sensorMetrics.traversalLog) {
+            showToast('⚠️ No traversal log available. Place sensors first.');
+            return;
+        }
+
+        const log = simState.sensorMetrics.traversalLog.join('\n');
+        const blob = new Blob([log], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sensor_traversal_log.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('📄 Traversal log exported!');
+    }, [simState.sensorMetrics, showToast]);
+
     // Load grid data from PostgreSQL via API based on selected area
     const loadGridData = useCallback((regionBounds) => {
         // Use proxy in development, or direct URL in production
@@ -181,7 +202,8 @@ export default function SimulationPage() {
             sensorInterval,
             adjRef.current,  // Pass adjacency list for DFS
             sources,         // Pass power sources
-            gridData.substations || []  // Pass substations
+            gridData.substations || [],  // Pass substations
+            simState.energizedStatus  // Pass energized status to filter paths
         );
         
         // Filter out sensors on non-energized buses
@@ -345,6 +367,7 @@ export default function SimulationPage() {
                     onToggleAreaSelection={handleToggleAreaSelection}
                     sensorInterval={sensorInterval}
                     onChangeSensorInterval={setSensorInterval}
+                    onExportTraversalLog={handleExportTraversalLog}
                 />
                 <MapView
                     gridData={gridData}
@@ -378,6 +401,10 @@ export default function SimulationPage() {
                         <div className="metric-card">
                             <div className="metric-label">Interval (L)</div>
                             <div className="metric-value">{simState.sensorMetrics.interval}</div>
+                        </div>
+                        <div className="metric-card">
+                            <div className="metric-label">Duplicate Sensors</div>
+                            <div className="metric-value">{simState.sensorMetrics.duplicateSensorsAtSubstations || 0}</div>
                         </div>
                         <div className="metric-card">
                             <div className="metric-label">System Resolution (N/k)</div>
