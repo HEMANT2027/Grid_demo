@@ -1,8 +1,8 @@
 /**
  * Sensor Predictor Page
  * 
- * Client-side estimation model for BFS sensor placement on electrical grids.
- * Rules R1–R3 (Feeder Exit, BFS Interval, Dead-end).
+ * Client-side estimation model for recursive DFS sensor placement on electrical grids.
+ * Rules R1–R3 (Feeder Exit, DFS Interval, Dead-end).
  * 
  * Research Basis:
  *   - IEC 61850 (Communication networks and systems for power utility automation)
@@ -36,7 +36,7 @@ const pct = (n, total) => total > 0 ? ((n / total) * 100).toFixed(1) : '0.0';
 /* ───────────── Coverage Tester ───────────── */
 /**
  * Verifies that every traversable node is within L hops of at least one sensor.
- * Simulates a BFS from every sensor simultaneously; any node NOT reached within
+ * Simulates a DFS from every sensor simultaneously; any node NOT reached within
  * L hops is a coverage gap.
  * 
  * @param {number} traversableNodes - total non-substation-cluster nodes
@@ -92,7 +92,7 @@ function verifyCoverage(traversableNodes, totalSensors, intervalL, { R1, R2, R3 
     ``,
     `  -- Proof Sketch --`,
     `  On a path graph: sensor every L nodes => max distance = floor(L/2).`,
-    `  On a tree: BFS from substations places sensors at most L apart.`,
+    `  On a tree: recursive DFS from substations places sensors at most L apart.`,
     `  Dead-ends (R3) ensure no blind spots at feeder tips.`,
     `  Therefore, for all node n: min_d(n, S) <= L.`,
     `===================================================`,
@@ -193,10 +193,10 @@ export default function SensorPredictorPage() {
     // R3 — dead-end leaf nodes (degree = 1, not a substation bus)
     const R3 = Math.round(traversableNodes * deadEndPct / 100);
 
-    // R2 — BFS interval sensors on the remaining non-special path nodes
+    // R2 — DFS interval sensors on the remaining non-special path nodes
     const alreadySensored = clamp(R1 + R3, 0, traversableNodes);
-    const bfsNodes        = traversableNodes - alreadySensored;
-    const R2              = Math.max(0, Math.round(bfsNodes / intervalL));
+    const dfsNodes        = traversableNodes - alreadySensored;
+    const R2              = Math.max(0, Math.round(dfsNodes / intervalL));
 
     const TOTAL = R1 + R2 + R3;
     const rangeLow  = Math.round(TOTAL * 0.85);
@@ -212,7 +212,7 @@ export default function SensorPredictorPage() {
       TOTAL,
       rangeLow, rangeHigh,
       nodesPerSensor, coveragePct,
-      bfsNodes: Math.round(bfsNodes),
+      dfsNodes: Math.round(dfsNodes),
     };
   }, [totalNodes, subClusterPct, substations, feedersPerSub, deadEndPct, intervalL]);
 
@@ -233,8 +233,8 @@ export default function SensorPredictorPage() {
       const R1 = clamp(substations * feedersPerSub, 0, traversableNodes);
       const R3 = Math.round(traversableNodes * deadEndPct / 100);
       const alreadySensored = clamp(R1 + R3, 0, traversableNodes);
-      const bfsNodes = traversableNodes - alreadySensored;
-      const R2 = Math.max(0, Math.round(bfsNodes / L));
+      const dfsNodes = traversableNodes - alreadySensored;
+      const R2 = Math.max(0, Math.round(dfsNodes / L));
       const total = R1 + R2 + R3;
       const nps = total > 0 ? (totalNodes / total).toFixed(1) : '∞';
       return { L, R2, total, nps, isCurrent: L === intervalL };
@@ -313,7 +313,7 @@ export default function SensorPredictorPage() {
         <div style={s.headerCenter}>
           <h1 style={s.title}>Sensor Predictor</h1>
           <p style={s.subtitle}>
-            BFS placement model  &middot;  Rules R1 – R3  &middot;  client-side
+            Recursive DFS placement model  &middot;  Rules R1 – R3  &middot;  client-side
           </p>
         </div>
         <div style={s.headerRight} />
@@ -335,15 +335,15 @@ export default function SensorPredictorPage() {
                   helperText="Feeder tips — Rule R3" />
         </div>
 
-        {/* Right column: Substations & BFS */}
+        {/* Right column: Substations & DFS */}
         <div style={s.card}>
-          <SectionHeader color="var(--rule-r2)">SUBSTATIONS &amp; BFS</SectionHeader>
+          <SectionHeader color="var(--rule-r2)">SUBSTATIONS &amp; DFS</SectionHeader>
           <Slider label="Number of substations" value={substations} onChange={setSubstations}
                   min={1} max={500} />
           <Slider label="Avg feeders per substation" value={feedersPerSub} onChange={setFeedersPerSub}
                   min={1} max={12}
                   derivedText={`R1 sensors = ${substations} × ${feedersPerSub} = ${fmt(results.R1)}`} />
-          <Slider label="BFS interval L (hops)" value={intervalL} onChange={setIntervalL}
+          <Slider label="DFS interval L (hops)" value={intervalL} onChange={setIntervalL}
                   min={5} max={100} />
         </div>
       </section>
@@ -363,7 +363,7 @@ export default function SensorPredictorPage() {
         {/* Rule breakdown cards */}
         <div style={s.ruleGrid}>
           <RuleCard label="Feeder Exit" code="R1" count={results.R1} total={results.TOTAL} color="var(--rule-r1)" />
-          <RuleCard label="BFS Interval" code="R2" count={results.R2} total={results.TOTAL} color="var(--rule-r2)" />
+          <RuleCard label="DFS Interval" code="R2" count={results.R2} total={results.TOTAL} color="var(--rule-r2)" />
           <RuleCard label="Dead-end" code="R3" count={results.R3} total={results.TOTAL} color="var(--rule-r3)" />
         </div>
 
@@ -501,8 +501,8 @@ export default function SensorPredictorPage() {
 #   which outgoing feeder has lost power (IEC 61850-9-2).
 R1 = substations x feeders_per_sub
 
-# -- Rule R2: BFS Interval ----------------------------------------
-# Trigger: Hop counter along BFS path reaches L
+# -- Rule R2: DFS Interval ----------------------------------------
+# Trigger: Hop counter along recursive DFS path reaches L
 # Placement: Node at hop count = L, 2L, 3L, ...
 # Justification: IEEE C37.118 recommends measurement points at regular
 #   intervals for state estimation observability. On distribution grids,
@@ -527,7 +527,7 @@ R3 = floor(N' x deadEndPct / 100)
 # -- Coverage Guarantee -------------------------------------------
 # Theorem: After placing sensors by R1-R3, every traversable node
 # is within L hops of at least one sensor.
-# Proof: BFS from substation clusters visits every connected node.
+# Proof: Recursive DFS from substation clusters visits every connected node.
 #   - R1 places sensors at boundary (hop 0-1 from cluster).
 #   - R2 places sensors every L hops on path nodes.
 #   - R3 covers terminal leaves explicitly.
