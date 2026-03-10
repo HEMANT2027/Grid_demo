@@ -403,10 +403,6 @@ export default function SimulationPage() {
                             <div className="metric-value">{simState.sensorMetrics.interval}</div>
                         </div>
                         <div className="metric-card">
-                            <div className="metric-label">Duplicate Sensors</div>
-                            <div className="metric-value">{simState.sensorMetrics.duplicateSensorsAtSubstations || 0}</div>
-                        </div>
-                        <div className="metric-card">
                             <div className="metric-label">System Resolution (N/k)</div>
                             <div className="metric-value">{simState.sensorMetrics.systemResolution.toFixed(2)}</div>
                         </div>

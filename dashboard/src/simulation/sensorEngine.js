@@ -120,7 +120,7 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
         for (let i = 0; i < substations.length; i++) {
             const [subLon, subLat] = substations[i];
             const distance = haversineDistance(busLat, busLon, subLat, subLon);
-            if (distance < 300) { // Within 200m of substation
+            if (distance < 300) { // Within 300m of substation
                 return i; // Return substation index
             }
         }
@@ -130,8 +130,9 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
     
     /**
      * DFS to traverse path, placing sensors every K poles and at the end.
+     * @param {boolean} needsFirstSensor - if true, place sensor at first bus outside 300m
      */
-    function traversePath(currentBus, polesSinceLastSensor, lastSensorBus, depth = 0, pathLog = []) {
+    function traversePath(currentBus, polesSinceLastSensor, lastSensorBus, depth = 0, pathLog = [], needsFirstSensor = false) {
         const neighbors = adj.get(currentBus) || [];
         let hasUnvisitedEnergizedNeighbors = false;
         
@@ -147,24 +148,36 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
             
             pathLog.push(`${'  '.repeat(depth)}Line ${lineIdx} (Bus ${currentBus} → Bus ${nextBus}): ${poleCount} poles`);
             
-            // Check if we should place a sensor after this segment
-            if (newPoleCount >= interval) {
-                // Place sensor at nextBus
+            const isOutside300m = getSubstationForBus(nextBus) === null;
+            
+            // Case 1: We need to place the first sensor (just outside 300m)
+            if (needsFirstSensor && isOutside300m) {
                 allSensors.push(nextBus);
-                sensorIntervals.push(newPoleCount);
-                pathLog.push(`${'  '.repeat(depth)}✓ INTERVAL SENSOR placed at Bus ${nextBus} (after ${newPoleCount} poles)`);
-                
-                // Continue with reset pole count
-                traversePath(nextBus, 0, nextBus, depth + 1, pathLog);
-            } else {
-                // Continue without placing sensor
-                traversePath(nextBus, newPoleCount, lastSensorBus, depth + 1, pathLog);
+                sensorIntervals.push(0); // first sensor on path
+                pathLog.push(`${'  '.repeat(depth)}✓ FIRST SENSOR placed at Bus ${nextBus} (just outside 300m)`);
+                traversePath(nextBus, 0, nextBus, depth + 1, pathLog, false);
+            }
+            // Case 2: Interval reached — place sensor if outside 300m
+            else if (newPoleCount >= interval) {
+                if (isOutside300m) {
+                    allSensors.push(nextBus);
+                    sensorIntervals.push(newPoleCount);
+                    pathLog.push(`${'  '.repeat(depth)}✓ INTERVAL SENSOR placed at Bus ${nextBus} (after ${newPoleCount} poles)`);
+                    traversePath(nextBus, 0, nextBus, depth + 1, pathLog, false);
+                } else {
+                    pathLog.push(`${'  '.repeat(depth)}⊘ Skipped Bus ${nextBus} (within 300m of substation)`);
+                    traversePath(nextBus, newPoleCount, lastSensorBus, depth + 1, pathLog, false);
+                }
+            }
+            // Case 3: Not enough poles yet, keep going
+            else {
+                traversePath(nextBus, newPoleCount, lastSensorBus, depth + 1, pathLog, needsFirstSensor);
             }
         }
         
         // End of path - place sensor if not already placed
         if (!hasUnvisitedEnergizedNeighbors && polesSinceLastSensor > 0) {
-            if (currentBus !== lastSensorBus) {
+            if (currentBus !== lastSensorBus && getSubstationForBus(currentBus) === null) {
                 allSensors.push(currentBus);
                 sensorIntervals.push(polesSinceLastSensor);
                 pathLog.push(`${'  '.repeat(depth)}✓ END SENSOR placed at Bus ${currentBus} (after ${polesSinceLastSensor} poles)`);
@@ -197,29 +210,23 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
                 continue;
             }
             
-            // Place sensor at START (substation)
-            allSensors.push(substationBus);
-            sensorIntervals.push(0);
-            sensorsAtThisSubstation++;
-            
-            pathLog.push(`  ✓ START SENSOR placed at Bus ${substationBus} for path to Bus ${nextBus}`);
-            
             visitedEdges.add(lineIdx);
             
             const poleCount = countPolesBetweenBuses(substationBus, nextBus, busGeoMap, poles);
-            pathLog.push(`    Line ${lineIdx}: ${poleCount} poles`);
+            pathLog.push(`  Line ${lineIdx} (Bus ${substationBus} → Bus ${nextBus}): ${poleCount} poles`);
             
-            // Check if we need sensor after first segment
-            if (poleCount >= interval) {
+            // Place first sensor at the first bus outside 300m of the substation
+            if (getSubstationForBus(nextBus) === null) {
+                // nextBus is outside 300m — place first sensor here
                 allSensors.push(nextBus);
-                sensorIntervals.push(poleCount);
-                pathLog.push(`    ✓ INTERVAL SENSOR placed at Bus ${nextBus} (after ${poleCount} poles)`);
-                
-                // Continue traversing from nextBus
-                traversePath(nextBus, 0, nextBus, 2, pathLog);
+                sensorIntervals.push(0);
+                sensorsAtThisSubstation++;
+                pathLog.push(`  ✓ FIRST SENSOR placed at Bus ${nextBus} (just outside 300m)`);
+                traversePath(nextBus, 0, nextBus, 2, pathLog, false);
             } else {
-                // Continue traversing
-                traversePath(nextBus, poleCount, substationBus, 2, pathLog);
+                // nextBus is within 300m — keep walking, flag needsFirstSensor=true
+                pathLog.push(`  ⊘ Bus ${nextBus} within 300m, walking forward to find first sensor location...`);
+                traversePath(nextBus, poleCount, substationBus, 2, pathLog, true);
             }
         }
         
@@ -227,6 +234,74 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
         pathLog.push(`  Total sensors at this substation: ${sensorsAtThisSubstation}`);
         
         traversalLog.push(...pathLog);
+    }
+    
+    // ─── Pass 2: Cover any remaining energized edges not reached from substations ───
+    let extraPathCount = 0;
+    for (const [busId, neighbors] of adj.entries()) {
+        if (energizedStatus.get(busId) !== 1) continue;
+        
+        for (const { to: nextBus, lineIdx } of neighbors) {
+            if (visitedEdges.has(lineIdx)) continue;
+            if (energizedStatus.get(nextBus) !== 1) continue;
+            
+            extraPathCount++;
+            const pathLog = [];
+            pathLog.push(`\n=== EXTRA PATH ${extraPathCount} (Line ${lineIdx}: Bus ${busId} ↔ Bus ${nextBus}) ===`);
+            
+            visitedEdges.add(lineIdx);
+            
+            const poleCount = countPolesBetweenBuses(busId, nextBus, busGeoMap, poles);
+            pathLog.push(`  Line ${lineIdx}: ${poleCount} poles`);
+            
+            // Place start sensor only if outside 300m
+            if (getSubstationForBus(busId) === null) {
+                allSensors.push(busId);
+                sensorIntervals.push(0);
+                pathLog.push(`  ✓ START SENSOR placed at Bus ${busId}`);
+                traversePath(nextBus, poleCount, busId, 1, pathLog);
+            } else {
+                pathLog.push(`  ⊘ Bus ${busId} within 300m, skipping start sensor`);
+                traversePath(nextBus, poleCount, null, 1, pathLog);
+            }
+            
+            traversalLog.push(...pathLog);
+        }
+    }
+    
+    if (extraPathCount > 0) {
+        console.log(`  Extra paths covered (not from substations): ${extraPathCount}`);
+    }
+    
+    // ─── Edge coverage diagnostics ───
+    let totalEnergizedEdges = 0;
+    let visitedEnergizedEdges = 0;
+    const missedEdges = [];
+    const seenEdgeIds = new Set();
+    
+    for (const [busId, neighbors] of adj.entries()) {
+        for (const { to: nextBus, lineIdx } of neighbors) {
+            if (seenEdgeIds.has(lineIdx)) continue; // each edge appears twice in adj
+            seenEdgeIds.add(lineIdx);
+            
+            const fromLive = energizedStatus.get(busId) === 1;
+            const toLive = energizedStatus.get(nextBus) === 1;
+            
+            if (fromLive && toLive) {
+                totalEnergizedEdges++;
+                if (visitedEdges.has(lineIdx)) {
+                    visitedEnergizedEdges++;
+                } else {
+                    missedEdges.push({ lineIdx, from: busId, to: nextBus });
+                }
+            }
+        }
+    }
+    
+    console.log(`  Edge coverage: ${visitedEnergizedEdges}/${totalEnergizedEdges} energized edges visited`);
+    if (missedEdges.length > 0) {
+        console.warn(`  ⚠️ ${missedEdges.length} energized edges MISSED:`);
+        missedEdges.forEach(e => console.warn(`    Line ${e.lineIdx}: Bus ${e.from} → Bus ${e.to}`));
     }
     
     // Calculate duplicates - count sensors in each substation area

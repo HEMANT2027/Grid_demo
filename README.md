@@ -9,7 +9,7 @@ A comprehensive real-time smart grid visualization and simulation platform for I
 - **Grid Simulation**: Energize/de-energize grid segments with BFS-based power flow simulation
 - **Fault Analysis**: Inject faults into transmission lines and visualize cascading impacts with bridge fault detection
 - **Intelligent Sensor Placement**: Interval-based sensor placement (L=50 poles) with strategic positioning at substations and path endpoints
-- **Sensor Predictor**: Client-side estimation tool that predicts sensor counts using Rules R1–R3 (Feeder Exit, BFS Interval, Dead-end) with research-backed formulations
+- **Sensor Predictor**: Client-side estimation tool that predicts sensor counts using Rules R1–R3 (Feeder Exit, RRecursive DFS Interval, Dead-end) with research-backed formulations
 - **Substation-Based Power Sources**: Uses actual substation locations as power sources instead of virtual nodes
 - **Geographic Area Selection**: Select specific regions for focused analysis
 
@@ -149,15 +149,15 @@ The application will be available at `http://localhost:5173`
 1. Navigate to `/sensor-predictor`
 2. Adjust sliders for graph topology (nodes, substations, dead-end %, etc.)
 3. View estimated sensor counts across Rules R1–R3 in real-time
-4. Analyze sensitivity to BFS interval L
+4. Analyze sensitivity to Recursive DFS interval L
 5. Run coverage verification to confirm full grid observability
 6. Export coverage reports
 
 ### Sensor Placement Strategy (Rules R1–R3)
 
-The system uses a BFS-based rule system:
+The system uses a DFS-based rule system:
 - **R1 (Feeder Exit)**: One sensor per feeder leaving a substation cluster (IEC 61850)
-- **R2 (BFS Interval)**: Sensor every L hops along BFS paths (IEEE C37.118, CEA India)
+- **R2 (Recursive DFS Interval)**: Sensor every L hops along DFS paths (IEEE C37.118, CEA India)
 - **R3 (Dead-end)**: Sensor at every terminal/leaf node (graph domination theory)
 - **Deduplication**: Rules applied in order R1 → R3 → R2, no double-counting
 - **Coverage guarantee**: Every node within L hops of the nearest sensor
