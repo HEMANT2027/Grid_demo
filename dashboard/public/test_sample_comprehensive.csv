@@ -1,0 +1,15 @@
+id,type,lat,lon,source,target,voltage
+sub_main_1,substation,28.6139,77.2090,,,220
+sub_main_2,substation,28.7041,77.1025,,,220
+pole_1,pole,28.6500,77.1500,,,132
+pole_2,pole,28.6700,77.1700,,,132
+tower_1,tower,28.6300,77.2200,,,400
+tower_2,tower,28.6800,77.2400,,,400
+bus_1,bus,28.6200,77.1800,,,132
+line_1,,,sub_main_1,pole_1,132
+line_2,,,pole_1,pole_2,132
+line_3,,,pole_2,sub_main_2,132
+line_4,,,sub_main_1,tower_1,400
+line_5,,,tower_1,tower_2,400
+line_6,,,tower_2,sub_main_2,400
+line_7,,,pole_1,bus_1,132

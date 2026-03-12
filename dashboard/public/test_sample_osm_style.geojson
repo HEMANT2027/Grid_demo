@@ -1,0 +1,100 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.2090, 28.6139]
+      },
+      "properties": {
+        "@id": "node/12345",
+        "power": "substation",
+        "voltage": "400",
+        "name": "Delhi Central Substation",
+        "substation": "transmission"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.4000, 28.6200]
+      },
+      "properties": {
+        "osmid": "node/67890",
+        "power": "substation",
+        "voltage": "220",
+        "name": "Noida Substation"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.0200, 28.6100]
+      },
+      "properties": {
+        "id": "gurgaon_sub",
+        "power": "substation",
+        "voltage": "132",
+        "name": "Gurgaon Substation"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.2500, 28.6180]
+      },
+      "properties": {
+        "power": "pole"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.3000, 28.6190]
+      },
+      "properties": {
+        "power": "tower",
+        "voltage": "220"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2500, 28.6180],
+          [77.3000, 28.6190],
+          [77.4000, 28.6200]
+        ]
+      },
+      "properties": {
+        "@id": "way/11111",
+        "power": "line",
+        "voltage": "220",
+        "cables": "3"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.1500, 28.6120],
+          [77.1000, 28.6110],
+          [77.0200, 28.6100]
+        ]
+      },
+      "properties": {
+        "id": "line_west",
+        "voltage": "132"
+      }
+    }
+  ]
+}
