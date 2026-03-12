@@ -2,7 +2,7 @@ import React from 'react';
 import { Radio, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 export default function SensorPanel({ simState }) {
-    const { sensors, sensorReadings, blocks, faultyBlock } = simState;
+    const { sensors, sensorReadings, intervals, faultyInterval, sensorMetrics } = simState;
 
     if (sensors.length === 0) {
         return (
@@ -14,7 +14,7 @@ export default function SensorPanel({ simState }) {
                     <div className="icon"><Radio size={32} /></div>
                     <div style={{ marginTop: 12 }}>No sensors placed</div>
                     <div style={{ fontSize: 11, color: '#444' }}>
-                        Click "Place √n Sensors" to begin
+                        Click "Deploy Sensors" to begin
                     </div>
                 </div>
             </div>
@@ -46,9 +46,7 @@ export default function SensorPanel({ simState }) {
                 </div>
             )}
 
-
-
-            {faultyBlock >= 0 && (
+            {faultyInterval >= 0 && intervals && intervals[faultyInterval] && (
                 <div style={{
                     padding: '12px 16px',
                     background: 'var(--surface-hover)',
@@ -61,11 +59,11 @@ export default function SensorPanel({ simState }) {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {/* Last Live Sensor */}
-                        {faultyBlock > 0 ? (
+                        {faultyInterval > 0 ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
                                 <CheckCircle size={14} color="var(--sensor-live)" />
                                 <div>
-                                    <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Sensor S{faultyBlock}</span>
+                                    <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Sensor S{faultyInterval}</span>
                                     <span style={{ margin: '0 6px', color: '#666' }}>→</span>
                                     <span style={{ color: 'var(--sensor-live)' }}>Last Live Point</span>
                                 </div>
@@ -76,6 +74,9 @@ export default function SensorPanel({ simState }) {
                                 <span style={{ color: 'var(--text-muted)' }}>Fault is before first sensor</span>
                             </div>
                         )}
+                        <div style={{ marginLeft: 6, height: 12, borderLeft: '1px dashed #666' }} />
+
+                        {/* First Dead Sensor */}
 
                         {/* Connection Line */}
                         <div style={{ marginLeft: 6, height: 12, borderLeft: '1px dashed #666' }} />
@@ -84,14 +85,19 @@ export default function SensorPanel({ simState }) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
                             <XCircle size={14} color="var(--sensor-dead)" />
                             <div>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Sensor S{faultyBlock + 1}</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Sensor S{faultyInterval + 1}</span>
                                 <span style={{ margin: '0 6px', color: '#666' }}>→</span>
                                 <span style={{ color: 'var(--sensor-dead)' }}>First Dead Point</span>
                             </div>
                         </div>
 
                         <div style={{ marginTop: 8, fontSize: 11, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: 6, borderRadius: 4 }}>
-                            Fault isolated between <strong>S{faultyBlock > 0 ? faultyBlock : 'Source'}</strong> and <strong>S{faultyBlock + 1}</strong>
+                            Fault isolated in interval between <strong>S{faultyInterval > 0 ? faultyInterval : 'Source'}</strong> and <strong>S{faultyInterval + 1}</strong>
+                            {intervals && intervals[faultyInterval] !== undefined && (
+                                <div style={{ marginTop: 4 }}>
+                                    Interval contains {intervals[faultyInterval]} poles
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -100,19 +106,19 @@ export default function SensorPanel({ simState }) {
             <div className="sensor-list">
                 {sensors.map((busId, i) => {
                     const isLive = sensorReadings ? (sensorReadings.get(busId) || 0) === 1 : true;
-                    const isFaultBlock = faultyBlock === i;
-                    const blockSize = blocks && blocks[i] ? blocks[i].length : 0;
+                    const isFaultInterval = faultyInterval === i;
+                    const intervalSize = intervals && intervals[i] !== undefined ? intervals[i] : 0;
 
                     return (
                         <div
                             key={busId}
-                            className={`sensor-item ${isFaultBlock ? 'fault-block' : ''}`}
+                            className={`sensor-item ${isFaultInterval ? 'fault-block' : ''}`}
                         >
                             <div className={`sensor-dot ${isLive ? 'live' : 'dead'}`} />
                             <span className="sensor-id">S{i + 1}</span>
                             <span className="sensor-bus">B{busId}</span>
                             <span className="sensor-bus" style={{ fontSize: 10, color: '#555' }}>
-                                [{blockSize}]
+                                [{intervalSize} poles]
                             </span>
                             <span className={`sensor-status ${isLive ? 'live' : 'dead'}`}>
                                 {isLive ? 'LIVE' : 'DEAD'}

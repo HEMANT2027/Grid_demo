@@ -1,0 +1,10 @@
+# Core dependencies
+networkx
+
+# Database dependencies
+psycopg2-binary
+python-dotenv
+
+# API server dependencies
+flask
+flask-cors

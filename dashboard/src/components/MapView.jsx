@@ -1,396 +1,709 @@
-import React, { useEffect, useRef } from 'react';
-import { MapContainer, useMap } from 'react-leaflet';
+import React, { useEffect, useRef, useMemo } from 'react';
+import { MapContainer, TileLayer, useMap, CircleMarker, Polyline, Tooltip, Rectangle, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { leafletLayer, LineSymbolizer } from 'protomaps-leaflet';
 
 const TILES = {
-    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-};
-
-// ── Theme-adaptive voltage palettes ──
-const VOLTAGE_TIERS_BY_THEME = {
-    dark: [
-        { min: 765, color: '#FF1744', width: 3.0, label: '765 kV' },
-        { min: 400, color: '#FF6D00', width: 2.5, label: '400 kV' },
-        { min: 220, color: '#FFD600', width: 2.0, label: '220 kV' },
-        { min: 132, color: '#76FF03', width: 1.5, label: '132 kV' },
-        { min: 110, color: '#00E676', width: 1.3, label: '110 kV' },
-        { min: 66, color: '#00B0FF', width: 1.2, label: '66 kV' },
-        { min: -1, color: '#9E9E9E', width: 0.8, label: 'Other / Untagged (HV)' },
-    ],
-    light: [
-        { min: 765, color: '#C62828', width: 3.0, label: '765 kV' },
-        { min: 400, color: '#E65100', width: 2.5, label: '400 kV' },
-        { min: 220, color: '#F57F17', width: 2.0, label: '220 kV' },
-        { min: 132, color: '#2E7D32', width: 1.5, label: '132 kV' },
-        { min: 110, color: '#1B5E20', width: 1.3, label: '110 kV' },
-        { min: 66, color: '#0277BD', width: 1.2, label: '66 kV' },
-        { min: -1, color: '#757575', width: 0.8, label: 'Other / Untagged (HV)' },
-    ],
-    satellite: [
-        { min: 765, color: '#FF5252', width: 3.5, label: '765 kV' },
-        { min: 400, color: '#FFAB40', width: 3.0, label: '400 kV' },
-        { min: 220, color: '#FFFF00', width: 2.5, label: '220 kV' },
-        { min: 132, color: '#69F0AE', width: 2.0, label: '132 kV' },
-        { min: 110, color: '#00E676', width: 1.8, label: '110 kV' },
-        { min: 66, color: '#40C4FF', width: 1.8, label: '66 kV' },
-        { min: -1, color: '#BDBDBD', width: 1.2, label: 'Other / Untagged (HV)' },
-    ],
-};
-
-const MARKER_THEMES = {
     dark: {
-        subFill: '#FFC107', subStroke: '#FF8F00', subDot: '#FF8F00',
-        towerFill: '#78909C', towerStroke: '#546E7A',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attr: '&copy; CartoDB'
     },
     light: {
-        subFill: '#FF8F00', subStroke: '#E65100', subDot: '#E65100',
-        towerFill: '#455A64', towerStroke: '#263238',
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        attr: '&copy; CartoDB'
     },
     satellite: {
-        subFill: '#FFD54F', subStroke: '#FFFFFF', subDot: '#FFFFFF',
-        towerFill: '#B0BEC5', towerStroke: '#FFFFFF',
-    },
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attr: '&copy; Esri'
+    }
 };
 
-const LEGEND_THEMES = {
-    dark: { bg: 'rgba(18,18,18,0.92)', text: '#ddd', border: '#333', titleColor: '#aaa' },
-    light: { bg: 'rgba(255,255,255,0.95)', text: '#222', border: '#ccc', titleColor: '#666' },
-    satellite: { bg: 'rgba(20,20,20,0.88)', text: '#eee', border: '#444', titleColor: '#bbb' },
+const VOLTAGE_COLORS = {
+    800: '#FF1A66',    // Bright pink-red for highest voltage
+    765: '#FF2E7A',    // Bright pink
+    400: '#FF7A00',    // Bright orange
+    345: '#FFA500',    // Orange
+    230: '#FFD700',    // Gold
+    220: '#FFEB3B',    // Bright yellow
+    132: '#76FF03',    // Bright lime
+    110: '#00FF88',    // Bright green
+    66: '#00D4FF',     // Bright cyan
+    33: '#3D8BFF',     // Bright blue
+    22: '#9C4DFF',     // Bright purple
+    11: '#D946FF',     // Bright magenta
 };
 
-function getVoltageTierIndex(voltageStr, tiers) {
-    // Empty or missing voltage → last tier (Other/Untagged)
-    if (!voltageStr || voltageStr.trim() === '') return tiers.length - 1;
-    const kv = parseInt(voltageStr);
-    if (isNaN(kv) || kv <= 0) return tiers.length - 1;
-    for (let i = 0; i < tiers.length - 1; i++) {
-        if (kv >= tiers[i].min) return i;
-    }
-    return tiers.length - 1;
+function getVoltageColor(kv) {
+    if (kv >= 765) return VOLTAGE_COLORS[765];
+    if (kv >= 400) return VOLTAGE_COLORS[400];
+    if (kv >= 220) return VOLTAGE_COLORS[220];
+    if (kv >= 132) return VOLTAGE_COLORS[132];
+    if (kv >= 110) return VOLTAGE_COLORS[110];
+    if (kv >= 66) return VOLTAGE_COLORS[66];
+    if (kv >= 33) return VOLTAGE_COLORS[33];
+    if (kv >= 22) return VOLTAGE_COLORS[22];
+    if (kv >= 11) return VOLTAGE_COLORS[11];
+    return '#666666';
 }
 
-// ── Custom Diamond symbolizer (substations) — zoom-responsive ──
-class DiamondSymbolizer {
-    constructor({ size, fill, stroke, dotFill, strokeWidth = 1.5, opacity = 1 }) {
-        this.baseSize = size;
-        this.fill = fill;
-        this.stroke = stroke;
-        this.dotFill = dotFill;
-        this.baseStrokeWidth = strokeWidth;
-        this.opacity = opacity;
-    }
-    draw(ctx, geom, z, feature) {
-        const pt = geom[0]?.[0];
-        if (!pt) return;
-        const { x, y } = pt;
-        // Zoom-responsive scaling: tiny at z<=4, full at z>=12
-        const t = Math.max(0, Math.min(1, (z - 4) / 8)); // 0→1 over z 4→12
-        const scale = 0.3 + t * 0.7; // 30%→100%
-        const s = this.baseSize * scale;
-        const sw = this.baseStrokeWidth * scale;
-        const dotR = Math.max(0.5, 1.5 * scale);
-        ctx.save();
-        ctx.globalAlpha = this.opacity * (0.5 + t * 0.5); // fade in slightly
-        ctx.beginPath();
-        ctx.moveTo(x, y - s);
-        ctx.lineTo(x + s, y);
-        ctx.lineTo(x, y + s);
-        ctx.lineTo(x - s, y);
-        ctx.closePath();
-        ctx.fillStyle = this.fill;
-        ctx.fill();
-        ctx.strokeStyle = this.stroke;
-        ctx.lineWidth = sw;
-        ctx.stroke();
-        if (s > 2) { // only draw center dot when large enough
-            ctx.beginPath();
-            ctx.arc(x, y, dotR, 0, Math.PI * 2);
-            ctx.fillStyle = this.dotFill;
-            ctx.fill();
-        }
-        ctx.restore();
-    }
-}
-
-// ── Custom Triangle symbolizer (towers) ──
-class TriangleSymbolizer {
-    constructor({ size, fill, stroke, strokeWidth = 0.5, opacity = 0.7 }) {
-        this.size = size;
-        this.fill = fill;
-        this.stroke = stroke;
-        this.strokeWidth = strokeWidth;
-        this.opacity = opacity;
-    }
-    draw(ctx, geom, z, feature) {
-        const pt = geom[0]?.[0];
-        if (!pt) return;
-        const { x, y } = pt;
-        const s = this.size;
-        ctx.save();
-        ctx.globalAlpha = this.opacity;
-        ctx.beginPath();
-        ctx.moveTo(x, y - s);
-        ctx.lineTo(x + s * 0.87, y + s * 0.5);
-        ctx.lineTo(x - s * 0.87, y + s * 0.5);
-        ctx.closePath();
-        ctx.fillStyle = this.fill;
-        ctx.fill();
-        ctx.strokeStyle = this.stroke;
-        ctx.lineWidth = this.strokeWidth;
-        ctx.stroke();
-        ctx.restore();
-    }
-}
-
-// ── Base tile layer ──
-function BaseTileLayer({ tileLayer }) {
+// Component to dynamically change tile layer
+function TileLayerSwitcher({ tileLayer }) {
     const map = useMap();
     const tileRef = useRef(null);
 
     useEffect(() => {
-        if (tileRef.current) map.removeLayer(tileRef.current);
-        const L = window.L;
-        const url = TILES[tileLayer] || TILES.dark;
-        const layer = L.tileLayer(url, { maxZoom: 19 });
+        if (tileRef.current) {
+            map.removeLayer(tileRef.current);
+        }
+        const L = window.L || require('leaflet');
+        const tileConfig = TILES[tileLayer] || TILES.dark;
+        const layer = L.tileLayer(tileConfig.url, {
+            attribution: tileConfig.attr,
+            maxZoom: 19,
+        });
         layer.addTo(map);
         tileRef.current = layer;
-        return () => { if (tileRef.current) map.removeLayer(tileRef.current); };
+
+        return () => {
+            if (tileRef.current) map.removeLayer(tileRef.current);
+        };
     }, [tileLayer, map]);
 
     return null;
 }
 
-// ── PMTiles overlay — rebuilds on tile theme, layer toggle, or energize change ──
-function PMTilesOverlay({ tileLayer, layers, energized }) {
-    const map = useMap();
-    const layerRef = useRef(null);
+// Render transmission lines with enhanced visibility
+function LineLayer({ gridData, simState, busGeoMap, isolateFault, onTriggerFault }) {
+    const { energized, energizedStatus, faultInfo, initialEnergizedStatus } = simState;
+    const [isFaultAnimating, setIsFaultAnimating] = React.useState(false);
 
-    // Serialize layers to a string so we can use it as an effect dependency
-    const layerKey = JSON.stringify(layers);
+    // Animate fault lines
+    React.useEffect(() => {
+        if (faultInfo) {
+            setIsFaultAnimating(true);
+            const interval = setInterval(() => {
+                setIsFaultAnimating(prev => !prev);
+            }, 600);
+            return () => clearInterval(interval);
+        } else {
+            setIsFaultAnimating(false);
+        }
+    }, [faultInfo]);
 
-    useEffect(() => {
-        if (layerRef.current) map.removeLayer(layerRef.current);
+    return useMemo(() => {
+        if (!gridData) return null;
+        const lines = gridData.lines;
+        const elements = [];
 
-        const theme = tileLayer || 'dark';
-        const tiers = VOLTAGE_TIERS_BY_THEME[theme] || VOLTAGE_TIERS_BY_THEME.dark;
-        const mk = MARKER_THEMES[theme] || MARKER_THEMES.dark;
+        for (let i = 0; i < lines.length; i++) {
+            // Handle both 4-element and 5-element line arrays
+            // Format: [id, source, target, voltage, name?]
+            const line = lines[i];
+            const idx = line[0];
+            const fromBus = line[1];
+            const toBus = line[2];
+            const kv = line[3] || 0; // Default to 0 if voltage is missing/null
+            const fromGeo = busGeoMap.get(fromBus);
+            const toGeo = busGeoMap.get(toBus);
+            if (!fromGeo || !toGeo) continue;
 
-        const showLines = layers?.lines ?? true;
-        const showCables = layers?.cables ?? true;
-        const showTowers = layers?.towers ?? false;
-        const showSubstations = layers?.substations ?? true;
-
-        try {
-            const paintRules = [];
-
-            // Line paint rules (one per voltage tier) — only if lines toggle on
-            if (showLines) {
-                if (energized) {
-                    tiers.forEach((tier, tierIdx) => {
-                        paintRules.push({
-                            dataLayer: 'grid',
-                            symbolizer: new LineSymbolizer({
-                                color: tier.color,
-                                width: tier.width,
-                                opacity: 0.9,
-                            }),
-                            filter: (zoom, feature) => {
-                                if (feature?.props?.type !== 'Line') return false;
-                                return getVoltageTierIndex(feature?.props?.voltage || '', tiers) === tierIdx;
-                            },
-                        });
-                    });
+            const isFaulted = faultInfo && faultInfo.lineIdx === idx;
+            
+            // When energized, check if buses are live
+            let fromLive = 0;
+            let toLive = 0;
+            let fromInitiallyLive = 0;
+            let toInitiallyLive = 0;
+            
+            if (energized) {
+                if (energizedStatus) {
+                    fromLive = energizedStatus.get(fromBus) || 0;
+                    toLive = energizedStatus.get(toBus) || 0;
                 } else {
-                    // De-energized: single grey rule for all lines
-                    paintRules.push({
-                        dataLayer: 'grid',
-                        symbolizer: new LineSymbolizer({
-                            color: '#555555',
-                            width: 1,
-                            opacity: 0.4,
-                        }),
-                        filter: (zoom, feature) => feature?.props?.type === 'Line',
-                    });
+                    // Energized but no status yet - assume all are live
+                    fromLive = 1;
+                    toLive = 1;
+                }
+                
+                // Check initial energized state
+                if (initialEnergizedStatus) {
+                    fromInitiallyLive = initialEnergizedStatus.get(fromBus) || 0;
+                    toInitiallyLive = initialEnergizedStatus.get(toBus) || 0;
+                } else {
+                    // No initial state yet, use current state
+                    fromInitiallyLive = fromLive;
+                    toInitiallyLive = toLive;
                 }
             }
+            
+            // Skip lines that were dead from the start (both buses dead initially)
+            if (energized && initialEnergizedStatus && !fromInitiallyLive && !toInitiallyLive) {
+                continue; // Don't render this line
+            }
+            
+            const isAffected = energized && faultInfo && !isFaulted && (!fromLive || !toLive);
 
-            // Cable paint rules — separate toggle
-            if (showCables) {
-                if (energized) {
-                    tiers.forEach((tier, tierIdx) => {
-                        paintRules.push({
-                            dataLayer: 'grid',
-                            symbolizer: new LineSymbolizer({
-                                color: tier.color,
-                                width: tier.width * 0.8,
-                                opacity: 0.75,
-                                dash: [6, 3],
-                            }),
-                            filter: (zoom, feature) => {
-                                if (feature?.props?.type !== 'Cable') return false;
-                                return getVoltageTierIndex(feature?.props?.voltage || '', tiers) === tierIdx;
-                            },
-                        });
-                    });
+            // If isolation mode is on, only show faulted and affected lines
+            if (isolateFault && !isFaulted && !isAffected) continue;
+
+            let color = '#555';
+            let weight = 2.5;
+            let opacity = 0.7;
+            let dashArray = null;
+            let className = '';
+
+            if (isFaulted) {
+                // Enhanced fault visualization with pulsing effect
+                color = isFaultAnimating ? '#FF0000' : '#FF4444';
+                weight = 5;
+                opacity = 1;
+                dashArray = '10 5';
+                className = 'fault-line';
+            } else if (isAffected) {
+                // Affected lines - de-energized due to fault
+                color = '#FF6D00'; // Orange to show affected status
+                weight = 3;
+                opacity = 0.8;
+                dashArray = '5 3';
+                className = 'affected-line';
+            } else if (energized) {
+                // When energized, show voltage-based colors if both buses are live
+                if (fromLive && toLive) {
+                    // Ensure kv is a number and > 0
+                    const voltage = typeof kv === 'number' ? kv : parseFloat(kv) || 0;
+                    if (voltage > 0) {
+                        color = getVoltageColor(voltage);
+                        // Increased weight for better visibility
+                        weight = voltage >= 400 ? 3.5 : voltage >= 220 ? 3 : 2.5;
+                        opacity = 0.85;
+                    } else {
+                        // Voltage unknown/zero - use a default energized color
+                        color = '#00FF88'; // Bright green for energized but unknown voltage
+                        weight = 2.5;
+                        opacity = 0.85;
+                    }
+                } else if (!fromLive && !toLive) {
+                    // Both buses are dead - show as de-energized
+                    color = '#3a3a3a';
+                    weight = 2;
+                    opacity = 0.5;
                 } else {
-                    paintRules.push({
-                        dataLayer: 'grid',
-                        symbolizer: new LineSymbolizer({
-                            color: '#555555',
-                            width: 0.8,
-                            opacity: 0.3,
-                            dash: [6, 3],
-                        }),
-                        filter: (zoom, feature) => feature?.props?.type === 'Cable',
-                    });
+                    // One bus live, one dead - show as partially energized (shouldn't happen normally)
+                    color = '#FFA500'; // Orange for partial
+                    weight = 2.5;
+                    opacity = 0.7;
                 }
+            } else {
+                // Default state (not energized) - show in gray
+                color = '#555';
+                weight = 2.5;
+                opacity = 0.7;
             }
 
-            // Substations — diamond
-            if (showSubstations) {
-                const subOpacity = energized ? 0.95 : 0.35;
-                paintRules.push({
-                    dataLayer: 'grid',
-                    symbolizer: new DiamondSymbolizer({
-                        size: 6,
-                        fill: energized ? mk.subFill : '#666',
-                        stroke: energized ? mk.subStroke : '#444',
-                        dotFill: energized ? mk.subDot : '#444',
-                        strokeWidth: theme === 'satellite' ? 2 : 1.5,
-                        opacity: subOpacity,
-                    }),
-                    filter: (zoom, feature) => {
-                        const t = feature?.props?.type;
-                        return t === 'Substation_Icon' || t === 'Substation_Area';
-                    },
-                });
-            }
-
-            // Towers — triangle at zoom ≥ 9
-            if (showTowers) {
-                const twrOpacity = energized
-                    ? (theme === 'satellite' ? 0.8 : 0.65)
-                    : 0.25;
-                paintRules.push({
-                    dataLayer: 'grid',
-                    symbolizer: new TriangleSymbolizer({
-                        size: 3,
-                        fill: energized ? mk.towerFill : '#555',
-                        stroke: energized ? mk.towerStroke : '#444',
-                        strokeWidth: theme === 'satellite' ? 1 : 0.5,
-                        opacity: twrOpacity,
-                    }),
-                    filter: (zoom, feature) => {
-                        return zoom >= 9 && feature?.props?.type === 'Tower';
-                    },
-                });
-            }
-
-            // If no rules, add a no-op to avoid empty layer
-            if (paintRules.length === 0) {
-                paintRules.push({
-                    dataLayer: 'grid',
-                    symbolizer: new LineSymbolizer({ color: 'transparent', width: 0, opacity: 0 }),
-                    filter: () => false,
-                });
-            }
-
-            const layer = leafletLayer({
-                url: '/india_grid.pmtiles',
-                paintRules,
-                labelRules: [],
-                maxDataZoom: 15,
-            });
-
-            layer.addTo(map);
-            layerRef.current = layer;
-        } catch (err) {
-            console.error('PMTiles layer error:', err);
+            elements.push(
+                <Polyline
+                    key={idx}
+                    positions={[[fromGeo[1], fromGeo[0]], [toGeo[1], toGeo[0]]]}
+                    pathOptions={{ color, weight, opacity, dashArray, className }}
+                    eventHandlers={{
+                        click: () => {
+                            if (onTriggerFault) onTriggerFault(idx);
+                        }
+                    }}
+                >
+                    <Tooltip sticky>
+                        <div style={{ fontSize: '12px', fontFamily: 'Inter, sans-serif' }}>
+                            <strong>Line {idx}</strong><br />
+                            {isFaulted ? (
+                                <span style={{ color: '#FF1744' }}>⚠️ FAULTED</span>
+                            ) : isAffected ? (
+                                <span style={{ color: '#FF6D00' }}>⚡ AFFECTED (De-energized)</span>
+                            ) : (
+                                <span>{kv > 0 ? `${kv} kV` : 'Voltage Unknown'}</span>
+                            )}
+                            <br />
+                            Bus {fromBus} ➝ Bus {toBus}
+                            {!isFaulted && !isAffected && <div style={{ marginTop: 4, fontSize: 10, color: '#aaa' }}>(Click to fault)</div>}
+                        </div>
+                    </Tooltip>
+                </Polyline>
+            );
         }
 
-        return () => { if (layerRef.current) map.removeLayer(layerRef.current); };
-    }, [map, tileLayer, layerKey, energized]);
+        return <>{elements}</>;
+    }, [gridData, energized, energizedStatus, initialEnergizedStatus, faultInfo, busGeoMap, isolateFault, onTriggerFault, isFaultAnimating]);
+}
+
+// Render tower markers with zoom-based visibility
+function TowerLayer({ gridData }) {
+    const map = useMap();
+    const [zoom, setZoom] = React.useState(map.getZoom());
+    const TOWER_VISIBILITY_THRESHOLD = 9; // Towers visible at zoom level 9+
+
+    React.useEffect(() => {
+        const handleZoom = () => {
+            setZoom(map.getZoom());
+        };
+        map.on('zoomend', handleZoom);
+        return () => {
+            map.off('zoomend', handleZoom);
+        };
+    }, [map]);
+
+    if (!gridData || !gridData.towers || zoom < TOWER_VISIBILITY_THRESHOLD) return null;
+
+    // Performance optimization: sample towers at lower zoom levels
+    const sampleRate = zoom >= 12 ? 1 : zoom >= 10 ? 2 : 4;
+
+    return (
+        <>
+            {gridData.towers.filter((_, i) => i % sampleRate === 0).map(([lon, lat], i) => (
+                <CircleMarker
+                    key={`t${i * sampleRate}`}
+                    center={[lat, lon]}
+                    radius={zoom >= 12 ? 4 : 3}
+                    pathOptions={{
+                        color: '#777',
+                        fillColor: '#999',
+                        fillOpacity: 0.7,
+                        weight: 1
+                    }}
+                >
+                    <Tooltip>
+                        Tower<br />
+                        {lat.toFixed(4)}, {lon.toFixed(4)}
+                    </Tooltip>
+                </CircleMarker>
+            ))}
+        </>
+    );
+}
+
+// Render pole markers with zoom-based visibility
+function PoleLayer({ gridData }) {
+    const map = useMap();
+    const [zoom, setZoom] = React.useState(map.getZoom());
+    const POLE_VISIBILITY_THRESHOLD = 10; // Poles visible at zoom level 10+
+
+    React.useEffect(() => {
+        const handleZoom = () => {
+            setZoom(map.getZoom());
+        };
+        map.on('zoomend', handleZoom);
+        return () => {
+            map.off('zoomend', handleZoom);
+        };
+    }, [map]);
+
+    if (!gridData || !gridData.poles || zoom < POLE_VISIBILITY_THRESHOLD) return null;
+
+    // Performance optimization: sample poles at lower zoom levels
+    const sampleRate = zoom >= 13 ? 1 : zoom >= 11 ? 3 : 5;
+
+    return (
+        <>
+            {gridData.poles.filter((_, i) => i % sampleRate === 0).map(([lon, lat], i) => (
+                <CircleMarker
+                    key={`p${i * sampleRate}`}
+                    center={[lat, lon]}
+                    radius={zoom >= 13 ? 3 : 2}
+                    pathOptions={{
+                        color: '#888',
+                        fillColor: '#aaa',
+                        fillOpacity: 0.7,
+                        weight: 1
+                    }}
+                >
+                    <Tooltip>
+                        Pole<br />
+                        {lat.toFixed(4)}, {lon.toFixed(4)}
+                    </Tooltip>
+                </CircleMarker>
+            ))}
+        </>
+    );
+}
+
+// Render substations
+function SubstationLayer({ gridData }) {
+    if (!gridData || !gridData.substations) return null;
+    return (
+        <>
+            {gridData.substations.map(([lon, lat, voltage, name], i) => (
+                <CircleMarker
+                    key={`s${i}`}
+                    center={[lat, lon]}
+                    radius={3}
+                    pathOptions={{ color: '#888', fillColor: '#DDD', fillOpacity: 0.8, weight: 1 }}
+                >
+                    {name && (
+                        <Tooltip>
+                            <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px' }}>
+                                <strong>{name}</strong><br />
+                                {voltage ? `${voltage}` : 'Unknown Voltage'}
+                            </div>
+                        </Tooltip>
+                    )}
+                </CircleMarker>
+            ))}
+        </>
+    );
+}
+
+// Render sensor markers
+function SensorLayer({ simState, busGeoMap }) {
+    const { sensors, sensorReadings } = simState;
+    if (!sensors || sensors.length === 0) return null;
+
+    return (
+        <>
+            {sensors.map((busId, i) => {
+                const geo = busGeoMap.get(busId);
+                if (!geo) return null;
+                
+                const isLive = sensorReadings
+                    ? (sensorReadings.get(busId) || 0) === 1
+                    : true;
+                
+                const color = isLive ? '#00E676' : '#FF1744';
+
+                return (
+                    <CircleMarker
+                        key={`sen${i}`}
+                        center={[geo[1], geo[0]]}
+                        radius={5}
+                        pathOptions={{
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.9,
+                            weight: 2,
+                        }}
+                    >
+                        <Tooltip>
+                            Sensor S{i + 1} | Bus {busId} | {isLive ? 'LIVE' : 'DEAD'}
+                        </Tooltip>
+                    </CircleMarker>
+                );
+            })}
+        </>
+    );
+}
+
+// Render power source marker
+function SourceMarker({ gridData, busGeoMap }) {
+    if (!gridData) return null;
+    const geo = busGeoMap.get(gridData.ext_grid_bus);
+    if (!geo) return null;
+
+    return (
+        <CircleMarker
+            center={[geo[1], geo[0]]}
+            radius={6}
+            pathOptions={{
+                color: '#E040FB',
+                fillColor: '#E040FB',
+                fillOpacity: 1,
+                weight: 2,
+            }}
+        >
+            <Tooltip>Power Source (Bus {gridData.ext_grid_bus})</Tooltip>
+        </CircleMarker>
+    );
+}
+
+// Component to track zoom level
+function ZoomTracker({ onZoomChange }) {
+    const map = useMap();
+
+    useEffect(() => {
+        const handleZoom = () => {
+            onZoomChange(map.getZoom());
+        };
+        handleZoom(); // Initial call
+        map.on('zoomend', handleZoom);
+        return () => {
+            map.off('zoomend', handleZoom);
+        };
+    }, [map, onZoomChange]);
 
     return null;
 }
 
-export default function MapView({ tileLayer, layers, energized }) {
-    const theme = tileLayer || 'dark';
-    const tiers = VOLTAGE_TIERS_BY_THEME[theme] || VOLTAGE_TIERS_BY_THEME.dark;
-    const mk = MARKER_THEMES[theme] || MARKER_THEMES.dark;
-    const lg = LEGEND_THEMES[theme] || LEGEND_THEMES.dark;
+// Component for area selection using rectangle drawing
+function AreaSelector({ isSelecting, onAreaSelected, onSelectionCancel }) {
+    const map = useMap();
+    const [startPoint, setStartPoint] = React.useState(null);
+    const [endPoint, setEndPoint] = React.useState(null);
+    const rectangleRef = React.useRef(null);
+
+    useMapEvents({
+        mousedown(e) {
+            if (!isSelecting || !onAreaSelected) return;
+            const { lat, lng } = e.latlng;
+            setStartPoint([lat, lng]);
+            setEndPoint([lat, lng]);
+        },
+        mousemove(e) {
+            if (!isSelecting || !startPoint) return;
+            const { lat, lng } = e.latlng;
+            setEndPoint([lat, lng]);
+        },
+        mouseup(e) {
+            if (!isSelecting || !startPoint || !endPoint || !onAreaSelected) return;
+            const bounds = [
+                [Math.min(startPoint[0], endPoint[0]), Math.min(startPoint[1], endPoint[1])],
+                [Math.max(startPoint[0], endPoint[0]), Math.max(startPoint[1], endPoint[1])]
+            ];
+            
+            // Convert bounds to API format (min_lon, min_lat, max_lon, max_lat)
+            const regionBounds = {
+                min_lon: bounds[0][1],
+                min_lat: bounds[0][0],
+                max_lon: bounds[1][1],
+                max_lat: bounds[1][0]
+            };
+            
+            onAreaSelected(regionBounds);
+            setStartPoint(null);
+            setEndPoint(null);
+        }
+    });
+
+    useEffect(() => {
+        if (isSelecting && onAreaSelected) {
+            map.getContainer().style.cursor = 'crosshair';
+            if (map.dragging) {
+                map.dragging.disable();
+            }
+        } else {
+            map.getContainer().style.cursor = '';
+            if (map.dragging) {
+                map.dragging.enable();
+            }
+            setStartPoint(null);
+            setEndPoint(null);
+        }
+        return () => {
+            map.getContainer().style.cursor = '';
+            if (map.dragging) {
+                map.dragging.enable();
+            }
+        };
+    }, [isSelecting, map, onAreaSelected]);
+
+    if (!isSelecting || !onAreaSelected || !startPoint || !endPoint) return null;
+
+    const bounds = [
+        [Math.min(startPoint[0], endPoint[0]), Math.min(startPoint[1], endPoint[1])],
+        [Math.max(startPoint[0], endPoint[0]), Math.max(startPoint[1], endPoint[1])]
+    ];
+
+    return (
+        <Rectangle
+            ref={rectangleRef}
+            bounds={bounds}
+            pathOptions={{
+                color: '#00D4FF',
+                fillColor: '#00D4FF',
+                fillOpacity: 0.2,
+                weight: 2,
+                dashArray: '5, 5'
+            }}
+        />
+    );
+}
+
+// Persistent overlay showing the last selected area
+function SelectedAreaOverlay({ bounds }) {
+    if (!bounds) return null;
+
+    // bounds is { min_lon, min_lat, max_lon, max_lat }
+    const leafletBounds = [
+        [bounds.min_lat, bounds.min_lon],
+        [bounds.max_lat, bounds.max_lon],
+    ];
+
+    return (
+        <Rectangle
+            bounds={leafletBounds}
+            pathOptions={{
+                color: '#00D4FF',
+                fillColor: '#00D4FF',
+                fillOpacity: 0.05,
+                weight: 2,
+                dashArray: '4, 4',
+            }}
+        />
+    );
+}
+
+export default function MapView({
+    gridData,
+    simState,
+    layers,
+    tileLayer,
+    isolateFault,
+    onTriggerFault,
+    isSelectingArea,
+    onAreaSelected,
+    onSelectionCancel,
+    showEmptyWhenNoData = false,
+    selectedAreaBounds,
+}) {
+    const [currentZoom, setCurrentZoom] = React.useState(5);
+
+    // Build bus geo lookup
+    const busGeoMap = useMemo(() => {
+        const m = new Map();
+        if (gridData) {
+            for (const [id, lon, lat] of gridData.buses) {
+                m.set(id, [lon, lat]);
+            }
+        }
+        return m;
+    }, [gridData]);
+
+    // Default center on India
+    const center = useMemo(() => {
+        if (gridData && gridData.buses.length > 0) {
+            let sumLat = 0, sumLon = 0, count = 0;
+            // Sample 500 buses for center
+            const step = Math.max(1, Math.floor(gridData.buses.length / 500));
+            for (let i = 0; i < gridData.buses.length; i += step) {
+                sumLon += gridData.buses[i][1];
+                sumLat += gridData.buses[i][2];
+                count++;
+            }
+            return [sumLat / count, sumLon / count];
+        }
+        return [22.5, 78.5]; // India center
+    }, [gridData]);
+
+    if (!gridData) {
+        if (showEmptyWhenNoData) {
+            // Show empty basemap (for SimulationPage before an area is selected)
+            return (
+                <div className="map-container">
+                    <MapContainer
+                        center={[22.5, 78.5]} // India center
+                        zoom={5}
+                        style={{ width: '100%', height: '100%' }}
+                        preferCanvas={true}
+                        zoomControl={true}
+                    >
+                        <TileLayerSwitcher tileLayer={tileLayer} />
+                        <ZoomTracker onZoomChange={setCurrentZoom} />
+                        {selectedAreaBounds && (
+                            <SelectedAreaOverlay bounds={selectedAreaBounds} />
+                        )}
+                        {isSelectingArea && onAreaSelected && (
+                            <AreaSelector
+                                isSelecting={isSelectingArea}
+                                onAreaSelected={onAreaSelected}
+                                onSelectionCancel={onSelectionCancel}
+                            />
+                        )}
+                    </MapContainer>
+                </div>
+            );
+        }
+
+        // Default behavior (used by Dashboard): show loading state while data is fetched
+        return (
+            <div className="map-container">
+                <div className="map-loading">
+                    <div className="spinner" />
+                    <div className="text">Loading grid data...</div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="map-container">
             <MapContainer
-                center={[22.5, 78.5]}
+                center={center}
                 zoom={5}
                 style={{ width: '100%', height: '100%' }}
                 preferCanvas={true}
+                zoomControl={true}
             >
-                <BaseTileLayer tileLayer={tileLayer} />
-                <PMTilesOverlay tileLayer={tileLayer} layers={layers} energized={energized} />
+                <TileLayerSwitcher tileLayer={tileLayer} />
+                <ZoomTracker onZoomChange={setCurrentZoom} />
+                {selectedAreaBounds && (
+                    <SelectedAreaOverlay bounds={selectedAreaBounds} />
+                )}
+                {isSelectingArea && onAreaSelected && (
+                    <AreaSelector 
+                        isSelecting={isSelectingArea} 
+                        onAreaSelected={onAreaSelected}
+                        onSelectionCancel={onSelectionCancel}
+                    />
+                )}
+
+                {layers.lines && (
+                    <LineLayer
+                        gridData={gridData}
+                        simState={simState}
+                        busGeoMap={busGeoMap}
+                        isolateFault={isolateFault}
+                        onTriggerFault={onTriggerFault}
+                    />
+                )}
+                {layers.towers && <TowerLayer gridData={gridData} />}
+                {layers.poles && <PoleLayer gridData={gridData} />}
+                {layers.substations && <SubstationLayer gridData={gridData} />}
+                {layers.sensors && <SensorLayer simState={simState} busGeoMap={busGeoMap} />}
+                {layers.source && <SourceMarker gridData={gridData} busGeoMap={busGeoMap} />}
             </MapContainer>
 
-            {/* Legend — professional utility-map index */}
-            <div
-                className="map-legend"
-                style={{
-                    background: lg.bg,
-                    color: lg.text,
-                    borderColor: lg.border,
-                }}
-            >
-                {/* ── VOLTAGE CLASS ── */}
-                <div className="legend-section-header" style={{ color: lg.titleColor }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
-                    Voltage Class
+            {/* Zoom level indicator */}
+            {(layers.poles || layers.towers) && (
+                <div className="zoom-indicator">
+                    <div className="zoom-level">Zoom: {currentZoom.toFixed(1)}</div>
+                    {layers.towers && currentZoom < 9 && (
+                        <div className="zoom-hint">🔍 Zoom in to see towers (9+)</div>
+                    )}
+                    {layers.poles && currentZoom < 10 && (
+                        <div className="zoom-hint">🔍 Zoom in to see poles (10+)</div>
+                    )}
                 </div>
-                {tiers.map(({ label, color }) => (
-                    <div key={label} className="legend-row">
-                        <div className="legend-swatch" style={{ background: color }} />
-                        <span className="legend-label" style={{ color: lg.text }}>{label}</span>
+            )}
+
+            {/* Voltage Legend */}
+            <div className="map-legend">
+                <div className="legend-title">Voltage Levels</div>
+                {[
+                    ['765+ kV', '#FF2E7A'],
+                    ['400 kV', '#FF7A00'],
+                    ['220 kV', '#FFEB3B'],
+                    ['132 kV', '#76FF03'],
+                    ['110 kV', '#00FF88'],
+                    ['66 kV', '#00D4FF'],
+                    ['33 kV', '#3D8BFF'],
+                    ['11 kV', '#D946FF'],
+                ].map(([label, color]) => (
+                    <div key={label} className="legend-item">
+                        <div className="legend-line" style={{ background: color }} />
+                        <span>{label}</span>
                     </div>
                 ))}
-
-                {/* ── INFRASTRUCTURE ── */}
-                <div className="legend-section-header" style={{ color: lg.titleColor }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 3v18" /></svg>
-                    Infrastructure
+                <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }} />
+                <div className="legend-item">
+                    <div className="legend-dot" style={{ background: '#00E676' }} />
+                    <span>Sensor Live</span>
                 </div>
-
-                {/* Substation — diamond */}
-                <div className="legend-row">
-                    <div className="legend-icon">
-                        <svg width="16" height="16" viewBox="0 0 16 16">
-                            <polygon points="8,1 15,8 8,15 1,8" fill={mk.subFill} stroke={mk.subStroke} strokeWidth="1.5" />
-                            <circle cx="8" cy="8" r="1.8" fill={mk.subDot} />
-                        </svg>
-                    </div>
-                    <span className="legend-label" style={{ color: lg.text }}>Substation</span>
+                <div className="legend-item">
+                    <div className="legend-dot" style={{ background: '#FF1744' }} />
+                    <span>Sensor Dead</span>
                 </div>
-
-                {/* Tower — triangle */}
-                <div className="legend-row">
-                    <div className="legend-icon">
-                        <svg width="16" height="16" viewBox="0 0 16 16">
-                            <polygon points="8,2 14,13 2,13" fill={mk.towerFill} stroke={mk.towerStroke} strokeWidth="0.8" />
-                        </svg>
-                    </div>
-                    <span className="legend-label" style={{ color: lg.text }}>Tower&ensp;<span style={{ fontSize: 9, opacity: 0.5 }}>z≥9</span></span>
-                </div>
-
-                {/* Cable — dashed line */}
-                <div className="legend-row">
-                    <div className="legend-icon">
-                        <svg width="16" height="4" viewBox="0 0 16 4">
-                            <line x1="0" y1="2" x2="16" y2="2" stroke={lg.text} strokeWidth="2" strokeDasharray="4 2" opacity="0.55" />
-                        </svg>
-                    </div>
-                    <span className="legend-label" style={{ color: lg.text }}>Cable (underground)</span>
+                <div className="legend-item">
+                    <div className="legend-line fault-indicator" style={{
+                        background: '#FF0000',
+                        height: 3,
+                        backgroundImage: 'repeating-linear-gradient(90deg, #FF0000 0px, #FF0000 10px, transparent 10px, transparent 15px)',
+                        boxShadow: '0 0 8px #FF0000'
+                    }} />
+                    <span>⚠️ Fault</span>
                 </div>
             </div>
         </div>

@@ -1,0 +1,6 @@
+"id","type","lat","lon","source","target","voltage"
+"sub_delhi_1","substation","28.6139","77.2090","","","220"
+"pole_gurgaon_1","pole","28.4595","77.0266","","","132"
+"pole_noida_1","pole","28.5355","77.3910","","","132"
+"line_delhi_gurgaon","","","","sub_delhi_1","pole_gurgaon_1","132"
+"line_delhi_noida","","","","sub_delhi_1","pole_noida_1","132"
