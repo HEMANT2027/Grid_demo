@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Activity, Zap, Cpu, ArrowRight, ChevronRight, BarChart3, MapPin } from 'lucide-react';
+import { Sparkles, Activity, Zap, Cpu, ArrowRight, ChevronRight, BarChart3, MapPin, CloudLightning } from 'lucide-react';
 import logo from '../assets/apparent_logo.jpeg';
 
 /* ═══════════════════════════════════════════
@@ -503,19 +503,6 @@ const LandingPage = () => {
                             View Dashboard
                         </button>
                     </div>
-
-                    {/* Stats row */}
-                    <div style={{
-                        ...s.statsRow,
-                        opacity: mounted ? 1 : 0,
-                        transform: mounted ? 'translateY(0)' : 'translateY(12px)',
-                    }}>
-                        <Stat value="500K+" label="Buses Mapped" />
-                        <div style={s.statDivider} />
-                        <Stat value="<50ms" label="Fault Detection" />
-                        <div style={s.statDivider} />
-                        <Stat value="99.9%" label="Grid Coverage" />
-                    </div>
                 </div>
             </section>
 
@@ -585,6 +572,17 @@ const LandingPage = () => {
                         mounted={mounted}
                         onClick={() => handleNav('/infrastructure-planner')}
                         linkText="Open Planner"
+                    />
+                    <FeatureCard
+                        icon={<CloudLightning size={22} />}
+                        iconColor="#0284C7"
+                        iconBg="rgba(2,132,199,0.08)"
+                        title="Real-Time Weather"
+                        desc="Live weather integration from Open-Meteo. Automatically adjusts sensor density recommendations based on 72h forecast risk."
+                        delay={0.4}
+                        mounted={mounted}
+                        onClick={() => handleNav('/sensor-predictor')}
+                        linkText="View Weather Impact"
                     />
                 </div>
             </section>
@@ -890,7 +888,7 @@ const s = {
     },
     featureGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gridTemplateColumns: 'repeat(3, 1fr)',
         gap: 24,
     },
     featureCard: {

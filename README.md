@@ -10,6 +10,7 @@ A comprehensive real-time smart grid visualization and simulation platform for I
 - **Fault Analysis**: Inject faults into transmission lines and visualize cascading impacts with bridge fault detection
 - **Intelligent Sensor Placement**: Interval-based sensor placement (L=50 poles) with strategic positioning at substations and path endpoints
 - **Sensor Predictor**: Client-side estimation tool that predicts sensor counts using Rules R1–R3 (Feeder Exit, DFS Interval, Dead-end) with research-backed formulations
+- **Real-Time Weather Risk**: Live Open-Meteo API integration that dynamically shrinks the sensor placement interval $L$ in regions with severe 72h weather forecasts (cyclones, floods, lightning).
 - **Infrastructure Planner**: Standalone tool for defining grid topology via PostGIS Search & Clip, Manual Drawing, and File Import (GeoJSON/CSV).
 - **Substation-Based Power Sources**: Uses actual substation locations as power sources instead of virtual nodes
 - **Geographic Area Selection**: Select specific regions for focused analysis
@@ -155,10 +156,11 @@ The application will be available at `http://localhost:5173`
 ### Sensor Predictor Page
 1. Navigate to `/sensor-predictor`
 2. Adjust sliders for graph topology (nodes, substations, dead-end %, etc.)
-3. View estimated sensor counts across Rules R1–R3 in real-time
-4. Analyze sensitivity to Recursive DFS interval L
-5. Run coverage verification to confirm full grid observability
-6. Export coverage reports
+3. Choose a geographic region to fetch live 72-hour weather forecast data (Open-Meteo API).
+4. View estimated sensor counts across Rules R1–R3 in real-time, adjusted dynamically based on weather risk.
+5. Analyze sensitivity to Recursive DFS interval L
+6. Run coverage verification to confirm full grid observability
+7. Export coverage reports
 ### Infrastructure Planner Page
 1. Navigate to `/infrastructure-planner`
 2. **Search & Clip**: Enter coordinate bounds or load the "Delhi NCR" preset to fetch real-world infrastructure from PostGIS.
