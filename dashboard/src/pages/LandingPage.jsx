@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Activity, Zap, Cpu, ArrowRight, ChevronRight, BarChart3 } from 'lucide-react';
+import { Sparkles, Activity, Zap, Cpu, ArrowRight, ChevronRight, BarChart3, MapPin } from 'lucide-react';
 import logo from '../assets/apparent_logo.jpeg';
 
 /* ═══════════════════════════════════════════
@@ -433,6 +433,7 @@ const LandingPage = () => {
                         <button onClick={() => handleNav('/dashboard')} style={s.navLink}>Dashboard</button>
                         <button onClick={() => handleNav('/simulation')} style={s.navLink}>Simulation</button>
                         <button onClick={() => handleNav('/sensor-predictor')} style={s.navLink}>Sensor Predictor</button>
+                        <button onClick={() => handleNav('/infrastructure-planner')} style={s.navLink}>Infra Planner</button>
                         <button onClick={() => handleNav('/simulation')} style={s.navCta}>
                             Launch App <ArrowRight size={14} style={{ marginLeft: 4 }} />
                         </button>
@@ -573,6 +574,17 @@ const LandingPage = () => {
                         mounted={mounted}
                         onClick={() => handleNav('/sensor-predictor')}
                         linkText="Open Predictor"
+                    />
+                    <FeatureCard
+                        icon={<MapPin size={22} />}
+                        iconColor="#D97706"
+                        iconBg="rgba(217,119,6,0.08)"
+                        title="Infrastructure Planner"
+                        desc="Define grid topology by drawing on the map, importing GeoJSON/CSV, or clipping from the database — sensors are placed automatically."
+                        delay={0.32}
+                        mounted={mounted}
+                        onClick={() => handleNav('/infrastructure-planner')}
+                        linkText="Open Planner"
                     />
                 </div>
             </section>

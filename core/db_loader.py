@@ -86,7 +86,7 @@ class GridDataLoader:
             where_clauses = ["source IS NOT NULL", "target IS NOT NULL"]
             params = []
             
-            if bus_ids:
+            if bus_ids is not None:
                 if len(bus_ids) > 0:
                     placeholders = ','.join(['%s'] * len(bus_ids))
                     where_clauses.append(f"source IN ({placeholders}) AND target IN ({placeholders})")

@@ -76,7 +76,7 @@ function verifyCoverage(traversableNodes, totalSensors, intervalL, { R1, R2, R3 
     ``,
     `  -- Rule Breakdown (before dedup) --`,
     `  R1 (Feeder Exit):          ${fmt(R1)}`,
-    `  R2 (BFS Interval):         ${fmt(R2)}`,
+    `  R2 (DFS Interval):         ${fmt(R2)}`,
     `  R3 (Dead-end):             ${fmt(R3)}`,
     `  Sum before dedup:          ${fmt(R1 + R2 + R3)}`,
     `  After dedup (TOTAL):       ${fmt(totalSensors)}`,
@@ -531,7 +531,7 @@ export default function SensorPredictorPage() {
                   min={100} max={500000} step={100} />
           <Slider label="% of nodes inside substation clusters" value={subClusterPct} onChange={setSubClusterPct}
                   min={1} max={30}
-                  helperText="Buses within 300 m of a substation centroid — excluded from BFS traversal" />
+                  helperText="Buses within 300 m of a substation centroid — excluded from DFS traversal" />
           <Slider label="% dead-end nodes (degree = 1)" value={deadEndPct} onChange={setDeadEndPct}
                   min={0} max={40}
                   helperText="Feeder tips — Rule R3" />
