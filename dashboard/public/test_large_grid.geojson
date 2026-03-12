@@ -1,0 +1,746 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.2090, 28.6139]},
+      "properties": {"id": "sub_central", "power": "substation", "voltage": 400, "name": "Central Grid Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.1025, 28.7041]},
+      "properties": {"id": "sub_north_main", "power": "substation", "voltage": 400, "name": "North Main Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.3200, 28.5200]},
+      "properties": {"id": "sub_south_main", "power": "substation", "voltage": 400, "name": "South Main Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.4500, 28.6300]},
+      "properties": {"id": "sub_east_main", "power": "substation", "voltage": 400, "name": "East Main Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [76.9800, 28.6000]},
+      "properties": {"id": "sub_west_main", "power": "substation", "voltage": 400, "name": "West Main Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.1500, 28.6500]},
+      "properties": {"id": "sub_northwest", "power": "substation", "voltage": 220, "name": "Northwest Distribution Sub"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.2800, 28.6800]},
+      "properties": {"id": "sub_northeast", "power": "substation", "voltage": 220, "name": "Northeast Distribution Sub"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.1200, 28.5500]},
+      "properties": {"id": "sub_southwest", "power": "substation", "voltage": 220, "name": "Southwest Distribution Sub"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.3500, 28.5800]},
+      "properties": {"id": "sub_southeast", "power": "substation", "voltage": 220, "name": "Southeast Distribution Sub"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.0500, 28.6800]},
+      "properties": {"id": "sub_industrial_north", "power": "substation", "voltage": 220, "name": "Industrial North Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.3800, 28.6900]},
+      "properties": {"id": "sub_tech_park", "power": "substation", "voltage": 220, "name": "Tech Park Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.2500, 28.5000]},
+      "properties": {"id": "sub_airport", "power": "substation", "voltage": 220, "name": "Airport Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.0800, 28.5800]},
+      "properties": {"id": "sub_residential_west", "power": "substation", "voltage": 132, "name": "West Residential Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.4200, 28.6100]},
+      "properties": {"id": "sub_commercial_east", "power": "substation", "voltage": 132, "name": "East Commercial Substation"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [77.2200, 28.6600]},
+      "properties": {"id": "sub_downtown", "power": "substation", "voltage": 132, "name": "Downtown Substation"}
+    },
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2150, 28.6200]}, "properties": {"id": "tower_c_1", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2100, 28.6300]}, "properties": {"id": "tower_c_2", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2050, 28.6400]}, "properties": {"id": "tower_c_3", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2000, 28.6500]}, "properties": {"id": "tower_c_4", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1950, 28.6600]}, "properties": {"id": "tower_c_5", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1800, 28.6700]}, "properties": {"id": "tower_c_6", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1600, 28.6800]}, "properties": {"id": "tower_c_7", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1400, 28.6900]}, "properties": {"id": "tower_c_8", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1200, 28.7000]}, "properties": {"id": "tower_c_9", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2200, 28.6050]}, "properties": {"id": "tower_s_1", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2300, 28.5950]}, "properties": {"id": "tower_s_2", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2400, 28.5850]}, "properties": {"id": "tower_s_3", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2500, 28.5750]}, "properties": {"id": "tower_s_4", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2600, 28.5650]}, "properties": {"id": "tower_s_5", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2700, 28.5550]}, "properties": {"id": "tower_s_6", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2850, 28.5450]}, "properties": {"id": "tower_s_7", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3000, 28.5350]}, "properties": {"id": "tower_s_8", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3100, 28.5250]}, "properties": {"id": "tower_s_9", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2300, 28.6180]}, "properties": {"id": "tower_e_1", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2500, 28.6200]}, "properties": {"id": "tower_e_2", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2700, 28.6220]}, "properties": {"id": "tower_e_3", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2900, 28.6240]}, "properties": {"id": "tower_e_4", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3100, 28.6260]}, "properties": {"id": "tower_e_5", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3300, 28.6270]}, "properties": {"id": "tower_e_6", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3500, 28.6280]}, "properties": {"id": "tower_e_7", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3700, 28.6285]}, "properties": {"id": "tower_e_8", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3900, 28.6290]}, "properties": {"id": "tower_e_9", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4100, 28.6295]}, "properties": {"id": "tower_e_10", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4300, 28.6298]}, "properties": {"id": "tower_e_11", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2000, 28.6120]}, "properties": {"id": "tower_w_1", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1800, 28.6100]}, "properties": {"id": "tower_w_2", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1600, 28.6080]}, "properties": {"id": "tower_w_3", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1400, 28.6060]}, "properties": {"id": "tower_w_4", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1200, 28.6040]}, "properties": {"id": "tower_w_5", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1000, 28.6020]}, "properties": {"id": "tower_w_6", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0900, 28.6010]}, "properties": {"id": "tower_w_7", "power": "tower", "voltage": 400}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1550, 28.6550]}, "properties": {"id": "pole_nw_1", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1600, 28.6600]}, "properties": {"id": "pole_nw_2", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1650, 28.6650]}, "properties": {"id": "pole_nw_3", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1700, 28.6700]}, "properties": {"id": "pole_nw_4", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1450, 28.6450]}, "properties": {"id": "pole_nw_5", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1400, 28.6400]}, "properties": {"id": "pole_nw_6", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1350, 28.6350]}, "properties": {"id": "pole_nw_7", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1300, 28.6300]}, "properties": {"id": "pole_nw_8", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1250, 28.6250]}, "properties": {"id": "pole_nw_9", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1200, 28.6200]}, "properties": {"id": "pole_nw_10", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2850, 28.6850]}, "properties": {"id": "pole_ne_1", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2900, 28.6900]}, "properties": {"id": "pole_ne_2", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2950, 28.6950]}, "properties": {"id": "pole_ne_3", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3000, 28.7000]}, "properties": {"id": "pole_ne_4", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2750, 28.6750]}, "properties": {"id": "pole_ne_5", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2700, 28.6700]}, "properties": {"id": "pole_ne_6", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2650, 28.6650]}, "properties": {"id": "pole_ne_7", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2600, 28.6600]}, "properties": {"id": "pole_ne_8", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2550, 28.6550]}, "properties": {"id": "pole_ne_9", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2500, 28.6500]}, "properties": {"id": "pole_ne_10", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1250, 28.5550]}, "properties": {"id": "pole_sw_1", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1300, 28.5600]}, "properties": {"id": "pole_sw_2", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1350, 28.5650]}, "properties": {"id": "pole_sw_3", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1400, 28.5700]}, "properties": {"id": "pole_sw_4", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1150, 28.5450]}, "properties": {"id": "pole_sw_5", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1100, 28.5400]}, "properties": {"id": "pole_sw_6", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1050, 28.5350]}, "properties": {"id": "pole_sw_7", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1000, 28.5300]}, "properties": {"id": "pole_sw_8", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0950, 28.5250]}, "properties": {"id": "pole_sw_9", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0900, 28.5200]}, "properties": {"id": "pole_sw_10", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3550, 28.5850]}, "properties": {"id": "pole_se_1", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3600, 28.5900]}, "properties": {"id": "pole_se_2", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3650, 28.5950]}, "properties": {"id": "pole_se_3", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3700, 28.6000]}, "properties": {"id": "pole_se_4", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3450, 28.5750]}, "properties": {"id": "pole_se_5", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3400, 28.5700]}, "properties": {"id": "pole_se_6", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3350, 28.5650]}, "properties": {"id": "pole_se_7", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3300, 28.5600]}, "properties": {"id": "pole_se_8", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3250, 28.5550]}, "properties": {"id": "pole_se_9", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3200, 28.5500]}, "properties": {"id": "pole_se_10", "power": "pole", "voltage": 220}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0550, 28.6850]}, "properties": {"id": "pole_ind_1", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0600, 28.6900]}, "properties": {"id": "pole_ind_2", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0650, 28.6950]}, "properties": {"id": "pole_ind_3", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0700, 28.7000]}, "properties": {"id": "pole_ind_4", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0750, 28.7050]}, "properties": {"id": "pole_ind_5", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0450, 28.6750]}, "properties": {"id": "pole_ind_6", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0400, 28.6700]}, "properties": {"id": "pole_ind_7", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0350, 28.6650]}, "properties": {"id": "pole_ind_8", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0300, 28.6600]}, "properties": {"id": "pole_ind_9", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0250, 28.6550]}, "properties": {"id": "pole_ind_10", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3850, 28.6950]}, "properties": {"id": "pole_tech_1", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3900, 28.7000]}, "properties": {"id": "pole_tech_2", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3950, 28.7050]}, "properties": {"id": "pole_tech_3", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4000, 28.7100]}, "properties": {"id": "pole_tech_4", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4050, 28.7150]}, "properties": {"id": "pole_tech_5", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3750, 28.6850]}, "properties": {"id": "pole_tech_6", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3700, 28.6800]}, "properties": {"id": "pole_tech_7", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3650, 28.6750]}, "properties": {"id": "pole_tech_8", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3600, 28.6700]}, "properties": {"id": "pole_tech_9", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3550, 28.6650]}, "properties": {"id": "pole_tech_10", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2550, 28.5050]}, "properties": {"id": "pole_air_1", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2600, 28.5100]}, "properties": {"id": "pole_air_2", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2650, 28.5150]}, "properties": {"id": "pole_air_3", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2700, 28.5200]}, "properties": {"id": "pole_air_4", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2750, 28.5250]}, "properties": {"id": "pole_air_5", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2450, 28.4950]}, "properties": {"id": "pole_air_6", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2400, 28.4900]}, "properties": {"id": "pole_air_7", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2350, 28.4850]}, "properties": {"id": "pole_air_8", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2300, 28.4800]}, "properties": {"id": "pole_air_9", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2250, 28.4750]}, "properties": {"id": "pole_air_10", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0850, 28.5850]}, "properties": {"id": "pole_res_1", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0900, 28.5900]}, "properties": {"id": "pole_res_2", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0950, 28.5950]}, "properties": {"id": "pole_res_3", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1000, 28.6000]}, "properties": {"id": "pole_res_4", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1050, 28.6050]}, "properties": {"id": "pole_res_5", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0750, 28.5750]}, "properties": {"id": "pole_res_6", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0700, 28.5700]}, "properties": {"id": "pole_res_7", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0650, 28.5650]}, "properties": {"id": "pole_res_8", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0600, 28.5600]}, "properties": {"id": "pole_res_9", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.0550, 28.5550]}, "properties": {"id": "pole_res_10", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4250, 28.6150]}, "properties": {"id": "pole_com_1", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4300, 28.6200]}, "properties": {"id": "pole_com_2", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4350, 28.6250]}, "properties": {"id": "pole_com_3", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4400, 28.6300]}, "properties": {"id": "pole_com_4", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4450, 28.6350]}, "properties": {"id": "pole_com_5", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4150, 28.6050]}, "properties": {"id": "pole_com_6", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4100, 28.6000]}, "properties": {"id": "pole_com_7", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4050, 28.5950]}, "properties": {"id": "pole_com_8", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.4000, 28.5900]}, "properties": {"id": "pole_com_9", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3950, 28.5850]}, "properties": {"id": "pole_com_10", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2250, 28.6650]}, "properties": {"id": "pole_down_1", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2300, 28.6700]}, "properties": {"id": "pole_down_2", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2350, 28.6750]}, "properties": {"id": "pole_down_3", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2400, 28.6800]}, "properties": {"id": "pole_down_4", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2450, 28.6850]}, "properties": {"id": "pole_down_5", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2150, 28.6550]}, "properties": {"id": "pole_down_6", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2100, 28.6500]}, "properties": {"id": "pole_down_7", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2050, 28.6450]}, "properties": {"id": "pole_down_8", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2000, 28.6400]}, "properties": {"id": "pole_down_9", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1950, 28.6350]}, "properties": {"id": "pole_down_10", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1800, 28.6250]}, "properties": {"id": "pole_dist_1", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1850, 28.6300]}, "properties": {"id": "pole_dist_2", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1900, 28.6350]}, "properties": {"id": "pole_dist_3", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1950, 28.6400]}, "properties": {"id": "pole_dist_4", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2000, 28.6450]}, "properties": {"id": "pole_dist_5", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2400, 28.6200]}, "properties": {"id": "pole_dist_6", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2450, 28.6250]}, "properties": {"id": "pole_dist_7", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2500, 28.6300]}, "properties": {"id": "pole_dist_8", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2550, 28.6350]}, "properties": {"id": "pole_dist_9", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2600, 28.6400]}, "properties": {"id": "pole_dist_10", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1600, 28.5800]}, "properties": {"id": "pole_feed_1", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1650, 28.5850]}, "properties": {"id": "pole_feed_2", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1700, 28.5900]}, "properties": {"id": "pole_feed_3", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1750, 28.5950]}, "properties": {"id": "pole_feed_4", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1800, 28.6000]}, "properties": {"id": "pole_feed_5", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2800, 28.5600]}, "properties": {"id": "pole_feed_6", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2850, 28.5650]}, "properties": {"id": "pole_feed_7", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2900, 28.5700]}, "properties": {"id": "pole_feed_8", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2950, 28.5750]}, "properties": {"id": "pole_feed_9", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3000, 28.5800]}, "properties": {"id": "pole_feed_10", "power": "pole", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2100, 28.6100]}, "properties": {"id": "bus_junction_1", "power": "portal", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2200, 28.6200]}, "properties": {"id": "bus_junction_2", "power": "portal", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2300, 28.6300]}, "properties": {"id": "bus_junction_3", "power": "portal", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1700, 28.6100]}, "properties": {"id": "bus_junction_4", "power": "portal", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2600, 28.6100]}, "properties": {"id": "bus_junction_5", "power": "portal", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1500, 28.5700]}, "properties": {"id": "bus_junction_6", "power": "portal", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2900, 28.5900]}, "properties": {"id": "bus_junction_7", "power": "portal", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.2000, 28.5500]}, "properties": {"id": "bus_junction_8", "power": "portal", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.3200, 28.6400]}, "properties": {"id": "bus_junction_9", "power": "portal", "voltage": 132}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [77.1200, 28.6400]}, "properties": {"id": "bus_junction_10", "power": "portal", "voltage": 132}},
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2150, 28.6200],
+          [77.2100, 28.6300],
+          [77.2050, 28.6400],
+          [77.2000, 28.6500],
+          [77.1950, 28.6600],
+          [77.1800, 28.6700],
+          [77.1600, 28.6800],
+          [77.1400, 28.6900],
+          [77.1200, 28.7000],
+          [77.1025, 28.7041]
+        ]
+      },
+      "properties": {"id": "line_central_north_400kv", "voltage": 400}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2200, 28.6050],
+          [77.2300, 28.5950],
+          [77.2400, 28.5850],
+          [77.2500, 28.5750],
+          [77.2600, 28.5650],
+          [77.2700, 28.5550],
+          [77.2850, 28.5450],
+          [77.3000, 28.5350],
+          [77.3100, 28.5250],
+          [77.3200, 28.5200]
+        ]
+      },
+      "properties": {"id": "line_central_south_400kv", "voltage": 400}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2300, 28.6180],
+          [77.2500, 28.6200],
+          [77.2700, 28.6220],
+          [77.2900, 28.6240],
+          [77.3100, 28.6260],
+          [77.3300, 28.6270],
+          [77.3500, 28.6280],
+          [77.3700, 28.6285],
+          [77.3900, 28.6290],
+          [77.4100, 28.6295],
+          [77.4300, 28.6298],
+          [77.4500, 28.6300]
+        ]
+      },
+      "properties": {"id": "line_central_east_400kv", "voltage": 400}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2000, 28.6120],
+          [77.1800, 28.6100],
+          [77.1600, 28.6080],
+          [77.1400, 28.6060],
+          [77.1200, 28.6040],
+          [77.1000, 28.6020],
+          [77.0900, 28.6010],
+          [76.9800, 28.6000]
+        ]
+      },
+      "properties": {"id": "line_central_west_400kv", "voltage": 400}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.1500, 28.6500],
+          [77.1550, 28.6550],
+          [77.1600, 28.6600],
+          [77.1650, 28.6650],
+          [77.1700, 28.6700]
+        ]
+      },
+      "properties": {"id": "line_nw_dist_1", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.1500, 28.6500],
+          [77.1450, 28.6450],
+          [77.1400, 28.6400],
+          [77.1350, 28.6350],
+          [77.1300, 28.6300],
+          [77.1250, 28.6250],
+          [77.1200, 28.6200]
+        ]
+      },
+      "properties": {"id": "line_nw_dist_2", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2800, 28.6800],
+          [77.2850, 28.6850],
+          [77.2900, 28.6900],
+          [77.2950, 28.6950],
+          [77.3000, 28.7000]
+        ]
+      },
+      "properties": {"id": "line_ne_dist_1", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2800, 28.6800],
+          [77.2750, 28.6750],
+          [77.2700, 28.6700],
+          [77.2650, 28.6650],
+          [77.2600, 28.6600],
+          [77.2550, 28.6550],
+          [77.2500, 28.6500]
+        ]
+      },
+      "properties": {"id": "line_ne_dist_2", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.1200, 28.5500],
+          [77.1250, 28.5550],
+          [77.1300, 28.5600],
+          [77.1350, 28.5650],
+          [77.1400, 28.5700]
+        ]
+      },
+      "properties": {"id": "line_sw_dist_1", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.1200, 28.5500],
+          [77.1150, 28.5450],
+          [77.1100, 28.5400],
+          [77.1050, 28.5350],
+          [77.1000, 28.5300],
+          [77.0950, 28.5250],
+          [77.0900, 28.5200]
+        ]
+      },
+      "properties": {"id": "line_sw_dist_2", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.3500, 28.5800],
+          [77.3550, 28.5850],
+          [77.3600, 28.5900],
+          [77.3650, 28.5950],
+          [77.3700, 28.6000]
+        ]
+      },
+      "properties": {"id": "line_se_dist_1", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.3500, 28.5800],
+          [77.3450, 28.5750],
+          [77.3400, 28.5700],
+          [77.3350, 28.5650],
+          [77.3300, 28.5600],
+          [77.3250, 28.5550],
+          [77.3200, 28.5500]
+        ]
+      },
+      "properties": {"id": "line_se_dist_2", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.0500, 28.6800],
+          [77.0550, 28.6850],
+          [77.0600, 28.6900],
+          [77.0650, 28.6950],
+          [77.0700, 28.7000],
+          [77.0750, 28.7050]
+        ]
+      },
+      "properties": {"id": "line_industrial_1", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.0500, 28.6800],
+          [77.0450, 28.6750],
+          [77.0400, 28.6700],
+          [77.0350, 28.6650],
+          [77.0300, 28.6600],
+          [77.0250, 28.6550]
+        ]
+      },
+      "properties": {"id": "line_industrial_2", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.3800, 28.6900],
+          [77.3850, 28.6950],
+          [77.3900, 28.7000],
+          [77.3950, 28.7050],
+          [77.4000, 28.7100],
+          [77.4050, 28.7150]
+        ]
+      },
+      "properties": {"id": "line_tech_park_1", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.3800, 28.6900],
+          [77.3750, 28.6850],
+          [77.3700, 28.6800],
+          [77.3650, 28.6750],
+          [77.3600, 28.6700],
+          [77.3550, 28.6650]
+        ]
+      },
+      "properties": {"id": "line_tech_park_2", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2500, 28.5000],
+          [77.2550, 28.5050],
+          [77.2600, 28.5100],
+          [77.2650, 28.5150],
+          [77.2700, 28.5200],
+          [77.2750, 28.5250]
+        ]
+      },
+      "properties": {"id": "line_airport_1", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2500, 28.5000],
+          [77.2450, 28.4950],
+          [77.2400, 28.4900],
+          [77.2350, 28.4850],
+          [77.2300, 28.4800],
+          [77.2250, 28.4750]
+        ]
+      },
+      "properties": {"id": "line_airport_2", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.0800, 28.5800],
+          [77.0850, 28.5850],
+          [77.0900, 28.5900],
+          [77.0950, 28.5950],
+          [77.1000, 28.6000],
+          [77.1050, 28.6050]
+        ]
+      },
+      "properties": {"id": "line_residential_west_1", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.0800, 28.5800],
+          [77.0750, 28.5750],
+          [77.0700, 28.5700],
+          [77.0650, 28.5650],
+          [77.0600, 28.5600],
+          [77.0550, 28.5550]
+        ]
+      },
+      "properties": {"id": "line_residential_west_2", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.4200, 28.6100],
+          [77.4250, 28.6150],
+          [77.4300, 28.6200],
+          [77.4350, 28.6250],
+          [77.4400, 28.6300],
+          [77.4450, 28.6350]
+        ]
+      },
+      "properties": {"id": "line_commercial_east_1", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.4200, 28.6100],
+          [77.4150, 28.6050],
+          [77.4100, 28.6000],
+          [77.4050, 28.5950],
+          [77.4000, 28.5900],
+          [77.3950, 28.5850]
+        ]
+      },
+      "properties": {"id": "line_commercial_east_2", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2200, 28.6600],
+          [77.2250, 28.6650],
+          [77.2300, 28.6700],
+          [77.2350, 28.6750],
+          [77.2400, 28.6800],
+          [77.2450, 28.6850]
+        ]
+      },
+      "properties": {"id": "line_downtown_1", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2200, 28.6600],
+          [77.2150, 28.6550],
+          [77.2100, 28.6500],
+          [77.2050, 28.6450],
+          [77.2000, 28.6400],
+          [77.1950, 28.6350]
+        ]
+      },
+      "properties": {"id": "line_downtown_2", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2100, 28.6100],
+          [77.1700, 28.6100],
+          [77.1500, 28.6500]
+        ]
+      },
+      "properties": {"id": "line_central_to_nw", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2200, 28.6200],
+          [77.2600, 28.6100],
+          [77.2800, 28.6800]
+        ]
+      },
+      "properties": {"id": "line_central_to_ne", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2000, 28.5500],
+          [77.1500, 28.5700],
+          [77.1200, 28.5500]
+        ]
+      },
+      "properties": {"id": "line_central_to_sw", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2300, 28.6300],
+          [77.2900, 28.5900],
+          [77.3500, 28.5800]
+        ]
+      },
+      "properties": {"id": "line_central_to_se", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.1025, 28.7041],
+          [77.1200, 28.6400],
+          [77.0500, 28.6800]
+        ]
+      },
+      "properties": {"id": "line_north_to_industrial", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.4500, 28.6300],
+          [77.3200, 28.6400],
+          [77.3800, 28.6900]
+        ]
+      },
+      "properties": {"id": "line_east_to_tech", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.3200, 28.5200],
+          [77.2500, 28.5000]
+        ]
+      },
+      "properties": {"id": "line_south_to_airport", "voltage": 220}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [76.9800, 28.6000],
+          [77.0800, 28.5800]
+        ]
+      },
+      "properties": {"id": "line_west_to_residential", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.4500, 28.6300],
+          [77.4200, 28.6100]
+        ]
+      },
+      "properties": {"id": "line_east_to_commercial", "voltage": 132}
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2200, 28.6600]
+        ]
+      },
+      "properties": {"id": "line_central_to_downtown", "voltage": 132}
+    }
+  ]
+}

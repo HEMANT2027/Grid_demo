@@ -1,0 +1,59 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.0000, 28.5000]
+      },
+      "properties": {
+        "id": "sub_a",
+        "power": "substation",
+        "voltage": 220,
+        "name": "Substation A"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.1000, 28.6000]
+      },
+      "properties": {
+        "id": "sub_b",
+        "power": "substation",
+        "voltage": 220,
+        "name": "Substation B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.0500, 28.5500]
+      },
+      "properties": {
+        "id": "pole_mid",
+        "power": "pole",
+        "voltage": 132,
+        "name": "Mid Pole"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.0000, 28.5000],
+          [77.0500, 28.5500],
+          [77.1000, 28.6000]
+        ]
+      },
+      "properties": {
+        "id": "line_main",
+        "voltage": 132
+      }
+    }
+  ]
+}

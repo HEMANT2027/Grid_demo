@@ -12,6 +12,7 @@
   "dependencies": {
     "@mapbox/vector-tile": "^2.0.4",
     "leaflet": "^1.9.4",
+    "leaflet-draw": "^1.0.4",
     "lucide-react": "^0.563.0",
     "pbf": "^4.0.1",
     "pmtiles": "^4.4.0",

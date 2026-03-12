@@ -1,69 +1,73 @@
-import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
 import StatusBar from '../components/StatusBar';
-import ControlPanel from '../components/ControlPanel';
 import MapView from '../components/MapView';
 import '../index.css';
 
 const INITIAL_LAYERS = {
-    lines: true,
-    cables: true,
-    towers: false,
-    substations: true,
-    sensors: false, // Added sensors to initial state if it was missing in App.jsx but commonly used
+  lines: true,
+  towers: false,
+  poles: false,
+  substations: true,
+};
+
+const EMPTY_SIM_STATE = {
+  energized: false,
+  sensors: [],
+  blocks: [],
+  sensorReadings: null,
+  energizedStatus: null,
+  faultInfo: null,
+  faultyBlock: -1,
 };
 
 export default function DashboardPage() {
-    const [layers, setLayers] = useState(INITIAL_LAYERS);
-    const [tileLayer, setTileLayer] = useState('dark');
-    const [energized, setEnergized] = useState(true);
-    const [toast, setToast] = useState(null);
-    const navigate = useNavigate();
+  const [gridData, setGridData] = useState(null);
+  const [layers] = useState(INITIAL_LAYERS);
+  const [tileLayer] = useState('dark');
+  const [toast, setToast] = useState(null);
+  const simState = EMPTY_SIM_STATE;
 
-    const showToast = useCallback((msg) => {
-        setToast(msg);
-        setTimeout(() => setToast(null), 3000);
-    }, []);
+  // Load grid data from PostgreSQL via API 
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
+    // Default to 'delhi' region to prevent loading all of India at once
+    const fetchUrl = `${apiUrl}/grid-data?region=delhi`;
+    
+    fetch(fetchUrl)
+      .then(r => {
+        if (!r.ok) {
+          throw new Error(`HTTP error! status: ${r.status}`);
+        }
+        return r.json();
+      })
+      .then(data => {
+        setGridData(data);
+        showToast(`Grid loaded: ${data.stats.total_buses.toLocaleString()} buses, ${data.stats.total_lines.toLocaleString()} lines`);
+      })
+      .catch(err => {
+        console.error('Failed to load grid data:', err);
+        showToast(`Failed to load grid data! Make sure the API server is running. Error: ${err.message}`);
+      });
+  }, []);
 
-    const handleToggleLayer = useCallback((key) => {
-        setLayers(prev => ({ ...prev, [key]: !prev[key] }));
-    }, []);
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }, []);
 
-    const handleEnergize = useCallback(() => {
-        setEnergized(true);
-        showToast('⚡ Grid energized');
-    }, [showToast]);
-
-    const handleDeenergize = useCallback(() => {
-        setEnergized(false);
-        showToast('Grid de-energized');
-    }, [showToast]);
-
-    return (
-        <div className="app">
-            <StatusBar
-                simState={{ energized }}
-                onNavigateToSim={() => window.open('/simulation', '_blank')}
-            />
-            <div className="app-body">
-                <ControlPanel
-                    simState={{ energized }}
-                    onEnergize={handleEnergize}
-                    onDeenergize={handleDeenergize}
-                    layers={layers}
-                    onToggleLayer={handleToggleLayer}
-                    tileLayer={tileLayer}
-                    onChangeTile={setTileLayer}
-                    onNavigateToSim={() => window.open('/simulation', '_blank')}
-                />
-                <MapView
-                    tileLayer={tileLayer}
-                    layers={layers}
-                    energized={energized}
-                />
-            </div>
-
-            {toast && <div className="toast">{toast}</div>}
-        </div>
-    );
+  return (
+    <div className="app">
+      <StatusBar gridData={gridData} simState={simState} />
+      <div className="app-body">
+        <MapView
+          gridData={gridData}
+          simState={simState}
+          layers={layers}
+          tileLayer={tileLayer}
+          isolateFault={false}
+        />
+      </div>
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
 }

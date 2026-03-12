@@ -1,0 +1,6 @@
+id,type,lat,lon,source,target,voltage
+sub_a,substation,28.5000,77.0000,,,220
+sub_b,substation,28.6000,77.1000,,,220
+pole_mid,pole,28.5500,77.0500,,,132
+line_a_mid,,,sub_a,pole_mid,132
+line_mid_b,,,pole_mid,sub_b,132

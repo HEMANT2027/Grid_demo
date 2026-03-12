@@ -1,0 +1,5 @@
+type,id,lat,lon
+substation,sub_1,22.3,73.1
+substation,sub_2,22.4,73.2
+bus,bus_1,22.35,73.15
+bus,bus_2,22.38,73.18

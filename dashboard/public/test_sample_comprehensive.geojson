@@ -1,0 +1,89 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.2090, 28.6139]
+      },
+      "properties": {
+        "id": "sub_main_1",
+        "power": "substation",
+        "voltage": 220,
+        "name": "Main Substation 1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.1025, 28.7041]
+      },
+      "properties": {
+        "id": "sub_main_2",
+        "power": "substation",
+        "voltage": 220,
+        "name": "Main Substation 2"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.2200, 28.6300]
+      },
+      "properties": {
+        "id": "tower_1",
+        "power": "tower",
+        "voltage": 400,
+        "name": "Tower 1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.2400, 28.6800]
+      },
+      "properties": {
+        "id": "tower_2",
+        "power": "tower",
+        "voltage": 400,
+        "name": "Tower 2"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.1500, 28.6500],
+          [77.1700, 28.6700],
+          [77.1025, 28.7041]
+        ]
+      },
+      "properties": {
+        "id": "line_132kv",
+        "voltage": 132
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.2090, 28.6139],
+          [77.2200, 28.6300],
+          [77.2400, 28.6800],
+          [77.1025, 28.7041]
+        ]
+      },
+      "properties": {
+        "id": "line_400kv",
+        "voltage": 400
+      }
+    }
+  ]
+}
