@@ -109,8 +109,6 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
         }
     }
     
-    console.log(`Found ${substationBuses.size} substation buses`);
-    
     /**
      * Check which substation area a bus belongs to (within radius).
      */
@@ -269,10 +267,6 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
         }
     }
     
-    if (extraPathCount > 0) {
-        console.log(`  Extra paths covered (not from substations): ${extraPathCount}`);
-    }
-    
     // ─── Edge coverage diagnostics ───
     let totalEnergizedEdges = 0;
     let visitedEnergizedEdges = 0;
@@ -298,7 +292,6 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
         }
     }
     
-    console.log(`  Edge coverage: ${visitedEnergizedEdges}/${totalEnergizedEdges} energized edges visited`);
     if (missedEdges.length > 0) {
         console.warn(`  ⚠️ ${missedEdges.length} energized edges MISSED:`);
         missedEdges.forEach(e => console.warn(`    Line ${e.lineIdx}: Bus ${e.from} → Bus ${e.to}`));
@@ -383,15 +376,6 @@ export function placeSensorsIntervalBased(poles, busGeoMap, interval = 50, adj =
         duplicateBuses: Array.from(duplicateBuses), // List of bus IDs that are duplicates
         traversalLog: traversalLog
     };
-    
-    console.log('Wire Path Sensor Placement:');
-    console.log(`  Total Sensors (with duplicates): ${allSensors.length}`);
-    console.log(`  Unique Sensors: ${k}`);
-    console.log(`  Duplicate Sensors at Substations: ${duplicateSensors}`);
-    console.log(`  System Resolution (N/k): ${systemResolution.toFixed(2)}`);
-    
-    console.log('\n=== TRAVERSAL LOG ===');
-    traversalLog.forEach(line => console.log(line));
     
     return {
         sensors: uniqueSensors,

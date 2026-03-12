@@ -29,22 +29,18 @@ export default function DashboardPage() {
 
   // Load grid data from PostgreSQL via API 
   useEffect(() => {
-    console.log('Starting to fetch grid data...');
     const apiUrl = import.meta.env.VITE_API_URL || '/api';
     // Default to 'delhi' region to prevent loading all of India at once
     const fetchUrl = `${apiUrl}/grid-data?region=delhi`;
-    console.log('Fetching from:', fetchUrl);
     
     fetch(fetchUrl)
       .then(r => {
-        console.log('Response status:', r.status);
         if (!r.ok) {
           throw new Error(`HTTP error! status: ${r.status}`);
         }
         return r.json();
       })
       .then(data => {
-        console.log('Grid data received:', data);
         setGridData(data);
         showToast(`Grid loaded: ${data.stats.total_buses.toLocaleString()} buses, ${data.stats.total_lines.toLocaleString()} lines`);
       })

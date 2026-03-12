@@ -104,6 +104,147 @@ function verifyCoverage(traversableNodes, totalSensors, intervalL, { R1, R2, R3 
   return { covered, gaps, maxHopsToSensor, report: lines.join('\n') };
 }
 
+/* ───────────── Weather Risk Model ───────────── */
+const BASE_WEIGHTS = {
+  cyclone: 0.25,
+  flood: 0.20,
+  rain: 0.15,
+  lightning: 0.20,
+  wind: 0.20
+};
+
+const REGIONS = {
+  default: {
+    label: 'Default (Baseline)',
+    lat: 28.6139, lon: 77.2090, // Delhi roughly
+    weights: {}
+  },
+  central_lightning: {
+    label: 'Central India (Lightning)',
+    lat: 22.5, lon: 80.0,
+    weights: { lightning: 0.15 }
+  },
+  kutch: {
+    label: 'Kutch',
+    lat: 23.5, lon: 69.5,
+    weights: { wind: 0.15 }
+  },
+  kerala: {
+    label: 'Kerala',
+    lat: 10.0, lon: 76.0,
+    weights: { rain: 0.10, flood: 0.10 }
+  },
+  east_coast: {
+    label: 'East Coast (Odisha/AP)',
+    lat: 18.0, lon: 84.0,
+    weights: { cyclone: 0.20 }
+  }
+};
+
+function computeWeights(regionKey) {
+  const weights = { ...BASE_WEIGHTS };
+  const modifiers = REGIONS[regionKey]?.weights || {};
+  
+  for (const [key, val] of Object.entries(modifiers)) {
+    if (weights[key] !== undefined) weights[key] += val;
+  }
+  
+  // Normalize
+  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  for (const key in weights) {
+    weights[key] /= total;
+  }
+  
+  return weights;
+}
+
+/**
+ * Fetch 3-day hourly forecast from Open-Meteo and compute composite 72h risk
+ */
+async function fetchWeatherAndComputeRisk(regionKey) {
+  const region = REGIONS[regionKey] || REGIONS.default;
+  const { lat, lon } = region;
+  
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,relativehumidity_2m,pressure_msl,cloudcover,windspeed_10m,windgusts_10m&forecast_days=3`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Weather API error');
+    
+    const data = await response.json();
+    console.log(`[WeatherRisk] Raw Open-Meteo Data for ${region.label}:`, data);
+    
+    const hourly = data.hourly;
+    const len = hourly.time.length;
+    
+    const weights = computeWeights(regionKey);
+    let maxRisk = 0;
+    let sumRisk = 0;
+    
+    // Compute feature proxies and risk for each hour
+    for (let i = 0; i < len; i++) {
+      const precip = hourly.precipitation[i] || 0;
+      const wind = hourly.windspeed_10m[i] || 0;
+      const gust = hourly.windgusts_10m[i] || 0;
+      const pressure = hourly.pressure_msl[i] || 1013;
+      const rh = hourly.relativehumidity_2m[i] || 0;
+      const cloud = hourly.cloudcover[i] || 0;
+      
+      // Feature Engineering
+      const rain_risk = Math.min(1, precip / 50);
+      
+      // Baseline wind is ignored (up to 25 km/h) to prevent normal breeze from inflating risk
+      const wind_stress = Math.max(0, Math.min(1, (wind - 25) / 55));
+      
+      const cyclone_risk = (gust > 60 && pressure < 1000) ? 1 : 0;
+      
+      // For flood, simple approximation using current precip * 24 instead of true rolling window for simplicity
+      // A true rolling window requires lookback, but 3 days data is small
+      let rollingRain = 0;
+      for (let j = Math.max(0, i - 23); j <= i; j++) {
+        rollingRain += hourly.precipitation[j] || 0;
+      }
+      const flood_risk = Math.min(1, rollingRain / 200);
+      
+      // Suppress lightning false positives (e.g. winter fog: 100% RH & Cloud, but no storm)
+      // Requires at least some rain or strong gusts to trigger lightning probability
+      const lightning_risk = (precip > 0 || gust > 30) 
+        ? Math.min(1, (rh/100 * cloud/100)) 
+        : 0;
+      
+      // Hourly risk
+      const risk = (
+        weights["cyclone"] * cyclone_risk +
+        weights["flood"] * flood_risk +
+        weights["rain"] * rain_risk +
+        weights["lightning"] * lightning_risk +
+        weights["wind"] * wind_stress
+      );
+      
+      sumRisk += risk;
+      if (risk > maxRisk) maxRisk = risk;
+    }
+    
+    const avgRisk = sumRisk / len;
+    
+    // 72h Forecast Risk aggregation: 0.7*max + 0.3*avg
+    const finalRisk = (0.7 * maxRisk) + (0.3 * avgRisk);
+    console.log(`[WeatherRisk] Open-Meteo Data -> Max Risk: ${maxRisk.toFixed(3)}, Avg Risk: ${avgRisk.toFixed(3)}`);
+    console.log(`[WeatherRisk] 72h Forecast Score (0.7*Max + 0.3*Avg): ${finalRisk.toFixed(3)}`);
+    
+    return finalRisk;
+    
+  } catch (err) {
+    console.error('Failed to fetch/compute weather risk:', err);
+    return 0; // Fallback to 0 risk on error
+  }
+}
+
+function computeAdjustedInterval(baseInterval, risk) {
+  const shrinkFactor = 1 / (1 + risk);
+  const adjusted = baseInterval * shrinkFactor;
+  return Math.max(5, Math.ceil(adjusted));
+}
+
 /* ───────────── Generalised Formulation ───────────── */
 /**
  * Research-backed approximate sensor count using circuit-km and infrastructure metrics.
@@ -173,12 +314,33 @@ export default function SensorPredictorPage() {
   const [deadEndPct,    setDeadEndPct]    = useState(12);
   const [intervalL,     setIntervalL]     = useState(20);
 
+  // Weather risk state
+  const [selectedRegion, setSelectedRegion] = useState('default');
+  const [weatherRisk, setWeatherRisk] = useState(0);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+
   // Extra inputs for generalised model
   const [circuitKm,     setCircuitKm]     = useState(1200);
   const [avgSpanKm,     setAvgSpanKm]     = useState(0.35);
 
   // Tester state
   const [testReport, setTestReport]       = useState(null);
+
+  /* ── Effect: Fetch Open-Meteo Data on Region Change ── */
+  useEffect(() => {
+    let active = true;
+    setIsLoadingWeather(true);
+    
+    fetchWeatherAndComputeRisk(selectedRegion).then(risk => {
+      if (active) {
+        console.log(`[WeatherRisk] Region "${selectedRegion}" updated. Applying risk score: ${risk.toFixed(3)}`);
+        setWeatherRisk(risk);
+        setIsLoadingWeather(false);
+      }
+    });
+    
+    return () => { active = false; };
+  }, [selectedRegion]);
 
   /* ── Core estimation logic (useMemo) ── */
   const results = useMemo(() => {
@@ -191,12 +353,20 @@ export default function SensorPredictorPage() {
     // R3 — dead-end leaf nodes (degree = 1, not a substation bus)
     const R3 = Math.round(traversableNodes * deadEndPct / 100);
 
+    // Weather risk adjusted interval
+    const risk = weatherRisk;
+    const adjustedL = computeAdjustedInterval(intervalL, risk);
+
     // R2 — DFS interval sensors on the remaining non-special path nodes
     const alreadySensored = clamp(R1 + R3, 0, traversableNodes);
     const dfsNodes        = traversableNodes - alreadySensored;
-    const R2              = Math.max(0, Math.round(dfsNodes / intervalL));
+    
+    const baseR2          = Math.max(0, Math.round(dfsNodes / intervalL));
+    const R2              = Math.max(0, Math.round(dfsNodes / adjustedL));
 
+    const baseTOTAL = R1 + baseR2 + R3;
     const TOTAL = R1 + R2 + R3;
+    
     const rangeLow  = Math.round(TOTAL * 0.85);
     const rangeHigh = Math.round(TOTAL * 1.15);
 
@@ -207,48 +377,68 @@ export default function SensorPredictorPage() {
       subClusterNodes: Math.round(subClusterNodes),
       traversableNodes: Math.round(traversableNodes),
       R1, R2, R3,
+      baseR2, baseTOTAL,
       TOTAL,
+      adjustedL, risk,
       rangeLow, rangeHigh,
       nodesPerSensor, coveragePct,
       dfsNodes: Math.round(dfsNodes),
     };
-  }, [totalNodes, subClusterPct, substations, feedersPerSub, deadEndPct, intervalL]);
+  }, [totalNodes, subClusterPct, substations, feedersPerSub, deadEndPct, intervalL, weatherRisk]);
 
   /* ── Generalised model ── */
   const genResults = useMemo(() => {
-    return generalizedEstimate({
+    const risk = weatherRisk;
+    const adjustedL = computeAdjustedInterval(intervalL, risk);
+    
+    const baseEst = generalizedEstimate({
       totalNodes, circuitKm, avgSpanKm, intervalL,
       substations, feedersPerSub, deadEndPct, subClusterPct
     });
-  }, [totalNodes, circuitKm, avgSpanKm, intervalL, substations, feedersPerSub, deadEndPct, subClusterPct]);
+
+    const adjEst = generalizedEstimate({
+      totalNodes, circuitKm, avgSpanKm, intervalL: adjustedL,
+      substations, feedersPerSub, deadEndPct, subClusterPct
+    });
+
+    return { baseEst, adjEst };
+  }, [totalNodes, circuitKm, avgSpanKm, intervalL, substations, feedersPerSub, deadEndPct, subClusterPct, weatherRisk]);
 
   /* ── L sensitivity table ── */
   const sensitivityRows = useMemo(() => {
+    const risk = weatherRisk;
     const Lvalues = [5, 10, 15, 20, 30, 50, 75, 100];
+    
     return Lvalues.map(L => {
+      const adjustedL = computeAdjustedInterval(L, risk);
       const subClusterNodes  = totalNodes * (subClusterPct / 100);
       const traversableNodes = totalNodes - subClusterNodes;
       const R1 = clamp(substations * feedersPerSub, 0, traversableNodes);
       const R3 = Math.round(traversableNodes * deadEndPct / 100);
       const alreadySensored = clamp(R1 + R3, 0, traversableNodes);
       const dfsNodes = traversableNodes - alreadySensored;
-      const R2 = Math.max(0, Math.round(dfsNodes / L));
+      
+      const baseR2 = Math.max(0, Math.round(dfsNodes / L));
+      const baseTotal = R1 + baseR2 + R3;
+      
+      const R2 = Math.max(0, Math.round(dfsNodes / adjustedL));
       const total = R1 + R2 + R3;
+      
       const nps = total > 0 ? (totalNodes / total).toFixed(1) : '∞';
-      return { L, R2, total, nps, isCurrent: L === intervalL };
+      return { L, adjustedL, R2, total, baseTotal, nps, isCurrent: L === intervalL };
     });
-  }, [totalNodes, subClusterPct, substations, feedersPerSub, deadEndPct, intervalL]);
+  }, [totalNodes, subClusterPct, substations, feedersPerSub, deadEndPct, intervalL, weatherRisk]);
 
   /* ── Coverage tester ── */
   const handleVerifyCoverage = useCallback(() => {
     const result = verifyCoverage(
       results.traversableNodes,
       results.TOTAL,
-      intervalL,
+      results.adjustedL,
       { R1: results.R1, R2: results.R2, R3: results.R3 }
     );
     setTestReport(result);
-  }, [results, intervalL]);
+  }, [results]);
 
   const handleExportReport = useCallback(() => {
     if (!testReport) return;
@@ -360,15 +550,64 @@ export default function SensorPredictorPage() {
         </div>
       </section>
 
+      {/* ─── WEATHER RISK ADJUSTMENT ─── */}
+      <section style={s.inputSection}>
+        <div style={{ ...s.card, gridColumn: '1 / -1' }}>
+          <SectionHeader color="var(--rule-r4)">WEATHER RISK &amp; REGIONAL IMPACT</SectionHeader>
+          
+          <div style={s.weatherHeader}>
+            <div style={s.weatherControls}>
+              <label style={s.sliderLabel}>Select Region &amp; Hazard Scenario</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <select 
+                  style={s.dropdown} 
+                  value={selectedRegion} 
+                  onChange={e => setSelectedRegion(e.target.value)}
+                  disabled={isLoadingWeather}
+                >
+                  {Object.entries(REGIONS).map(([key, data]) => (
+                    <option key={key} value={key}>{data.label}</option>
+                  ))}
+                </select>
+                {isLoadingWeather && <span style={s.loadingText}>Fetching weather data...</span>}
+              </div>
+            </div>
+            
+            <div style={{ ...s.riskStrip, opacity: isLoadingWeather ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+              <div style={s.riskBox}>
+                <div style={s.riskLabel}>72H FORECAST RISK</div>
+                <div style={{ ...s.riskValue, color: results.risk > 0.4 ? 'var(--rule-r3)' : results.risk > 0.15 ? 'var(--rule-r4)' : 'var(--rule-r2)' }}>
+                  {results.risk.toFixed(2)}
+                </div>
+              </div>
+              <div style={s.riskBox}>
+                <div style={s.riskLabel}>BASE INTERVAL (L)</div>
+                <div style={s.riskValue}>{intervalL} <span style={s.riskUnit}>hops</span></div>
+              </div>
+              <div style={s.riskBox}>
+                <div style={s.riskLabel}>RISK-ADJUSTED INTERVAL (L')</div>
+                <div style={{ ...s.riskValue, color: 'var(--accent)' }}>{results.adjustedL} <span style={s.riskUnit}>hops</span></div>
+              </div>
+              <div style={s.riskBox}>
+                <div style={s.riskLabel}>SENSOR TOTAL (vs BASE)</div>
+                <div style={s.riskValue}>
+                  {fmt(results.TOTAL)} <span style={s.riskDelta}>({results.TOTAL >= results.baseTOTAL ? '+' : ''}{fmt(results.TOTAL - results.baseTOTAL)})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── RESULTS PANEL ─── */}
       <section style={s.resultsSection}>
         {/* Big number */}
         <div style={s.bigNumber}>
-          <div style={s.bigLabel}>ESTIMATED SENSOR COUNT</div>
+          <div style={s.bigLabel}>ESTIMATED SENSOR COUNT (WEATHER-ADJUSTED)</div>
           <div style={s.bigValue}>{fmt(results.TOTAL)}</div>
           <div style={s.bigRange}>
-            realistic range: {fmt(results.rangeLow)} – {fmt(results.rangeHigh)}
-            <span style={s.rangeNote}> (±15% topology variance)</span>
+            baseline without weather risk: {fmt(results.baseTOTAL)} sensors 
+            <span style={s.rangeNote}> (R2 calculated with L={intervalL})</span>
           </div>
         </div>
 
@@ -420,17 +659,18 @@ export default function SensorPredictorPage() {
           Based on IEEE C37.118 spacing guidelines, IEC 61850, and graph domination theory.
         </p>
         <div style={s.formulaBox}>
-          <div style={s.formulaLine}><span style={s.fVar}>S</span> <span style={s.fOp}>=</span> <span style={s.fVar}>CKM</span><span style={s.fOp}>/</span><span style={s.fVar}>d</span> <span style={s.fOp}>+</span> <span style={s.fVar}>N_sub</span><span style={s.fOp}>x</span><span style={s.fVar}>F_avg</span> <span style={s.fOp}>+</span> <span style={s.fVar}>N_dead</span></div>
-          <div style={s.formulaComment}># where d = L x avg_span_km = {intervalL} x {avgSpanKm} = {genResults.dSpacing} km</div>
+          <div style={s.formulaLine}><span style={s.fVar}>S</span> <span style={s.fOp}>=</span> <span style={s.fVar}>CKM</span><span style={s.fOp}>/</span><span style={s.fVar}>d'</span> <span style={s.fOp}>+</span> <span style={s.fVar}>N_sub</span><span style={s.fOp}>x</span><span style={s.fVar}>F_avg</span> <span style={s.fOp}>+</span> <span style={s.fVar}>N_dead</span></div>
+          <div style={s.formulaComment}># where d' = adjusted_L x avg_span_km = {results.adjustedL} x {avgSpanKm} = {genResults.adjEst.dSpacing} km</div>
         </div>
         <div style={{...s.genGrid, gridTemplateColumns: 'repeat(3, 1fr)'}}>
-          <div style={s.genCard}><div style={s.genLabel}>CKM / d</div><div style={s.genValue}>{fmt(genResults.sFromCKM)}</div><div style={s.genDesc}>Circuit-km spacing</div></div>
-          <div style={s.genCard}><div style={s.genLabel}>N_sub x F_avg</div><div style={s.genValue}>{fmt(genResults.sFromFeeders)}</div><div style={s.genDesc}>Feeder exit sensors</div></div>
-          <div style={s.genCard}><div style={s.genLabel}>N_dead</div><div style={s.genValue}>{fmt(genResults.sFromDeadEnds)}</div><div style={s.genDesc}>Dead-end coverage</div></div>
+          <div style={s.genCard}><div style={s.genLabel}>CKM / d'</div><div style={s.genValue}>{fmt(genResults.adjEst.sFromCKM)}</div><div style={s.genDesc}>Circuit-km spacing</div></div>
+          <div style={s.genCard}><div style={s.genLabel}>N_sub x F_avg</div><div style={s.genValue}>{fmt(genResults.adjEst.sFromFeeders)}</div><div style={s.genDesc}>Feeder exit sensors</div></div>
+          <div style={s.genCard}><div style={s.genLabel}>N_dead</div><div style={s.genValue}>{fmt(genResults.adjEst.sFromDeadEnds)}</div><div style={s.genDesc}>Dead-end coverage</div></div>
         </div>
         <div style={s.genTotal}>
-          Generalised estimate: <strong>{fmt(genResults.total)}</strong> sensors
-          <span style={s.genSpacing}> (avg spacing: {genResults.dSpacing} km)</span>
+          Generalised estimate (weather-adj): <strong>{fmt(genResults.adjEst.total)}</strong> sensors
+          <span style={s.genSpacing}> (avg spacing: {genResults.adjEst.dSpacing} km)</span>
+          <div style={s.genBaseNote}>Baseline estimate: {fmt(genResults.baseEst.total)} sensors (spacing: {genResults.baseEst.dSpacing} km)</div>
         </div>
       </section>
 
@@ -443,9 +683,11 @@ export default function SensorPredictorPage() {
             <table style={s.table}>
               <thead>
                 <tr>
-                  <th style={s.th}>L (hops)</th>
-                  <th style={s.th}>R2 sensors</th>
-                  <th style={s.th}>Total sensors</th>
+                  <th style={s.th}>L (base)</th>
+                  <th style={s.th}>L' (risk-adj)</th>
+                  <th style={s.th}>R2 sensors (adj)</th>
+                  <th style={s.th}>Total (adj)</th>
+                  <th style={s.th}>Total (base)</th>
                   <th style={s.th}>Nodes / sensor</th>
                 </tr>
               </thead>
@@ -453,8 +695,10 @@ export default function SensorPredictorPage() {
                 {sensitivityRows.map(row => (
                   <tr key={row.L} style={row.isCurrent ? s.highlightRow : s.tableRow}>
                     <td style={row.isCurrent ? { ...s.td, color: 'var(--accent)', fontWeight: 600 } : s.td}>{row.L}{row.isCurrent ? ' \u25C0' : ''}</td>
+                    <td style={s.td}>{row.adjustedL}</td>
                     <td style={s.td}>{fmt(row.R2)}</td>
                     <td style={row.isCurrent ? { ...s.td, color: 'var(--accent)', fontWeight: 600 } : s.td}>{fmt(row.total)}</td>
+                    <td style={s.td}><span style={s.baseVal}>{fmt(row.baseTotal)}</span></td>
                     <td style={s.td}>{row.nps}</td>
                   </tr>
                 ))}
@@ -505,6 +749,13 @@ export default function SensorPredictorPage() {
         <SectionHeader color="var(--rule-r1)">FORMULA REFERENCE &amp; RESEARCH BASIS</SectionHeader>
         <div style={s.formulaRef}>
           <pre style={s.formulaPre}>{`
+# -- Weather Risk Adjustment --------------------------------------
+# Trigger: Region-specific hazard scenarios (cyclone, flood, etc.)
+# Logic: compute composite risk based on regional weights and scores.
+# Adjustment: L' = ceil(L / (1 + risk))
+# Justification: Higher weather risk (0.0 to 1.0) shrinks the interval L,
+# densifying the sensor deployment in vulnerable areas.
+
 # -- Rule R1: Feeder Exit -----------------------------------------
 # Trigger: Edge crosses from substation-cluster to non-cluster bus
 # Placement: First non-cluster node on each outgoing feeder
@@ -513,14 +764,14 @@ export default function SensorPredictorPage() {
 #   which outgoing feeder has lost power (IEC 61850-9-2).
 R1 = substations x feeders_per_sub
 
-# -- Rule R2: DFS Interval ----------------------------------------
-# Trigger: Hop counter along recursive DFS path reaches L
-# Placement: Node at hop count = L, 2L, 3L, ...
+# -- Rule R2: DFS Interval (Weather-Adjusted) ---------------------
+# Trigger: Hop counter along recursive DFS path reaches L'
+# Placement: Node at hop count = L', 2L', 3L', ...
 # Justification: IEEE C37.118 recommends measurement points at regular
 #   intervals for state estimation observability. On distribution grids,
 #   typical L maps to 5-15 km spacing (CEA India guidelines).
-# After deducting R1 + R3: remaining nodes / L
-R2 = max(0, floor((N' - R1 - R3) / L))
+# After deducting R1 + R3: remaining nodes / L'
+R2 = max(0, floor((N' - R1 - R3) / L'))
 
 # -- Rule R3: Dead-end --------------------------------------------
 # Trigger: Node with degree = 1 (leaf) and not inside a substation cluster
@@ -1085,6 +1336,87 @@ const s = {
     fontFamily: "'IBM Plex Mono', monospace",
     overflow: 'auto',
     whiteSpace: 'pre',
+  },
+
+  /* Weather section */
+  weatherHeader: {
+    display: 'flex',
+    gap: '32px',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  weatherControls: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    minWidth: '200px',
+  },
+  dropdown: {
+    padding: '8px 12px',
+    borderRadius: '6px',
+    border: '1px solid var(--border)',
+    background: 'var(--bg-inset)',
+    fontFamily: "'IBM Plex Sans', sans-serif",
+    fontSize: '14px',
+    color: 'var(--text-primary)',
+    outline: 'none',
+    cursor: 'pointer',
+  },
+  riskStrip: {
+    display: 'flex',
+    gap: '16px',
+    flex: 1,
+    borderLeft: '1px solid var(--border)',
+    paddingLeft: '32px',
+    flexWrap: 'wrap',
+  },
+  riskBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    minWidth: '100px',
+  },
+  riskLabel: {
+    fontSize: '10px',
+    fontWeight: 600,
+    letterSpacing: '0.08em',
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+  },
+  riskValue: {
+    fontSize: '24px',
+    fontWeight: 600,
+    fontFamily: "'IBM Plex Mono', monospace",
+    color: 'var(--text-primary)',
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '4px',
+  },
+  riskUnit: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    fontWeight: 400,
+  },
+  riskDelta: {
+    fontSize: '14px',
+    fontWeight: 500,
+    color: 'var(--rule-r4)',
+  },
+  baseVal: {
+    color: 'var(--text-muted)',
+    textDecoration: 'line-through',
+  },
+  genBaseNote: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    marginTop: '6px',
+  },
+
+  loadingText: {
+    fontSize: '12px',
+    color: 'var(--accent)',
+    fontStyle: 'italic',
+    fontWeight: 500,
   },
 
   /* Footer */
