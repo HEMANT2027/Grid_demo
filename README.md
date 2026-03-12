@@ -10,6 +10,7 @@ A comprehensive real-time smart grid visualization and simulation platform for I
 - **Fault Analysis**: Inject faults into transmission lines and visualize cascading impacts with bridge fault detection
 - **Intelligent Sensor Placement**: Interval-based sensor placement (L=50 poles) with strategic positioning at substations and path endpoints
 - **Sensor Predictor**: Client-side estimation tool that predicts sensor counts using Rules R1–R3 (Feeder Exit, DFS Interval, Dead-end) with research-backed formulations
+- **Infrastructure Planner**: Standalone tool for defining grid topology via PostGIS Search & Clip, Manual Drawing, and File Import (GeoJSON/CSV).
 - **Substation-Based Power Sources**: Uses actual substation locations as power sources instead of virtual nodes
 - **Geographic Area Selection**: Select specific regions for focused analysis
 
@@ -38,12 +39,18 @@ Grid_demo/
 │   │   │   ├── LandingPage.jsx  # Marketing landing page
 │   │   │   ├── DashboardPage.jsx # Display-only grid view
 │   │   │   ├── SimulationPage.jsx # Full simulation environment
-│   │   │   └── SensorPredictorPage.jsx # Sensor count estimator (R1–R3)
+│   │   │   ├── SensorPredictorPage.jsx # Sensor count estimator (R1–R3)
+│   │   │   └── InfrastructurePlannerPage.jsx # New grid definition tool
 │   │   ├── components/          # Reusable UI components
 │   │   │   ├── MapView.jsx      # Leaflet map with layers
 │   │   │   ├── ControlPanel.jsx # Simulation controls
 │   │   │   ├── SensorPanel.jsx  # Sensor status display
 │   │   │   └── StatusBar.jsx    # Grid statistics
+│   │   ├── planner/             # Infrastructure Planner logic
+│   │   │   ├── PlannerMap.jsx   # Dedicated plotting component
+│   │   │   ├── plannerEngine.js # Isolated topology algorithms
+│   │   │   ├── fileParser.js    # GeoJSON/CSV ingestion
+│   │   │   └── IMPORT_SCHEMA_GUIDE.md # Schema documentation
 │   │   ├── simulation/          # Simulation engines
 │   │   │   ├── gridEngine.js    # Graph algorithms (BFS, DFS, Tarjan)
 │   │   │   └── sensorEngine.js  # Interval-based sensor placement
@@ -152,8 +159,15 @@ The application will be available at `http://localhost:5173`
 4. Analyze sensitivity to DFS interval L
 5. Run coverage verification to confirm full grid observability
 6. Export coverage reports
-
-### Sensor Placement Strategy (Rules R1–R3)
+### Infrastructure Planner Page
+1. Navigate to `/infrastructure-planner`
+2. **Search & Clip**: Enter coordinate bounds or load the "Delhi NCR" preset to fetch real-world infrastructure from PostGIS.
+3. **File Import**: Drag and drop `.geojson` or `.csv` files to import custom topologies.
+4. **Drawing Mode**: Use the Polyline tool to draw transmission lines; vertices automatically become poles.
+5. **Node Interactions**:
+   - Toggle poles into substations by clicking them.
+   - Manually place/remove sensors on specific towers.
+6. **Execution**: Adjust the sensor interval (L) and click **🚀 Run Sensor Placement** to compute results.
 
 The system uses a recursive DFS-based rule system:
 - **R1 (Feeder Exit)**: One sensor per feeder leaving a substation cluster (IEC 61850)
